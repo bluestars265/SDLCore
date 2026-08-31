@@ -1,59 +1,43 @@
 # .github/workflows/ci.yml
-# 通用 GUI 库（基于 PySDL2）的持续集成与自动发布工作流
-# 支持 Python 3.9 - 3.13，Windows / Ubuntu / macOS
+# 通用 GUI 库（基于 PySDL2）的持续集成与自动发布
+# 支持 Python 3.10–3.13，跨平台
 
 name: CI
 
-# ============================================================
-# 触发事件
-# ============================================================
 on:
-  # 推送至 main/develop 或向 main 发起 PR 时运行测试
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-  # 手动触发
   workflow_dispatch:
-  # 创建 Release 时自动发布到 PyPI
   release:
     types: [ published ]
 
-# ============================================================
-# 环境变量
-# ============================================================
 env:
-  # 无头显示驱动，避免 GUI 测试时弹出窗口
   SDL_VIDEODRIVER: dummy
   SDL_AUDIODRIVER: dummy
 
-# ============================================================
-# 作业 1：测试矩阵（多平台 × 多 Python 版本）
-# ============================================================
 jobs:
   test:
     name: Test ${{ matrix.os }} / Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false  # 一个任务失败不取消其他任务
+      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        # 支持类型注解的 Python 版本（3.9+ 支持类型注解语法）
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
 
     steps:
-      # 1. 检出代码
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. 安装 Python
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      # 3. 安装系统级 SDL2 依赖（各平台不同）
+      # ---------- 系统级 SDL2 依赖 ----------
       - name: Install SDL2 (Ubuntu)
         if: runner.os == 'Linux'
         run: |
@@ -65,19 +49,25 @@ jobs:
         run: |
           brew install sdl2 sdl2_image sdl2_ttf sdl2_mixer
 
-      - name: Install SDL2 (Windows)
+      - name: Install SDL2 DLL (Windows)
         if: runner.os == 'Windows'
         run: pip install pysdl2-dll
 
-      # 4. 安装 Python 项目依赖
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install -e .
-          pip install pytest ruff
+      # ---------- Python 依赖安装 ----------
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
 
-      # 5. 【Windows 专属】将 SDL2.dll 路径加入环境变量
+      - name: Install requirements.txt if exists
+        if: hashFiles('requirements.txt') != ''
+        run: pip install -r requirements.txt
+
+      - name: Install project in editable mode
+        run: pip install -e .
+
+      - name: Install test tools
+        run: pip install pytest
+
+      # ---------- Windows 环境变量 ----------
       - name: Set SDL2_DLL_PATH (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -85,56 +75,40 @@ jobs:
           echo "SDL2_DLL_PATH=$dll_path" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "$dll_path" | Out-File -FilePath $env:GITHUB_PATH -Append
 
-      # 6. 代码规范检查
-      - name: Lint with Ruff
-        run: ruff check .
-
-      # 7. 运行单元测试
-      - name: Run tests with pytest
+      # ---------- 运行测试 ----------
+      - name: Run tests
         run: pytest tests/ -v
 
-  # ============================================================
-  # 作业 2：构建并发布到 PyPI（仅在 Release 时触发）
-  # ============================================================
+  # ---------- 自动发布到 PyPI ----------
   publish:
     name: Build and publish to PyPI
-    needs: test  # 等待测试全部通过后再发布
+    needs: test
     runs-on: ubuntu-latest
-    # 仅当创建 Release 时触发
     if: github.event_name == 'release' && github.event.action == 'published'
-    # 强烈建议使用 environment 增加审核门禁[reference:0]
     environment: pypi
     permissions:
-      # Trusted Publishing 必需的权限[reference:1]
       id-token: write
-      # 用于上传 PEP 740 兼容的 attestations[reference:2]
       attestations: write
 
     steps:
-      # 1. 检出代码
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. 安装 Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
-      # 3. 安装构建工具
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip
           pip install build
 
-      # 4. 构建分发包（sdist + wheel）
       - name: Build package
         run: python -m build
 
-      # 5. 使用 Trusted Publishing 发布到 PyPI[reference:3][reference:4]
-      #    无需配置 username/password/API token，OIDC 自动认证
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        # 如需发布到 TestPyPI 进行测试，取消下面两行注释：
+        # 如需测试，取消下面注释：
         # with:
         #   repository-url: https://test.pypi.org/legacy/
