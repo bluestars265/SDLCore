@@ -24,8 +24,8 @@ dependencies = [
 
 [project.urls]
 # 发布到 GitHub 后请填写你的仓库地址
-Homepage = "https://github.com/"
-Documentation = "https://github.com/"
+Homepage = "https://github.com/bluestars265/SDLCore/"
+Documentation = "https://github.com/bluestars265/SDLCore/"
 
 [tool.setuptools.packages.find]
 include = ["SDLCore*"]
