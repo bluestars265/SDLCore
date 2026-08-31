@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SDLCore"
+version = "0.1.0"
+description = "基于 PySDL2 的通用 GUI 引擎 + MOD 化游戏框架（控件 / 布局 / 场景 / 资源 / MOD 系统）"
+readme = "README.md"
+requires-python = ">=3.13"
+license = "Apache-2.0"
+keywords = ["pysdl2", "sdl2", "gui", "game-engine", "mod", "ui", "widgets"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Games/Entertainment",
+]
+dependencies = [
+    "pysdl2>=0.9.16",
+    "pysdl2-dll>=2.30",
+]
+
+[project.urls]
+# 发布到 GitHub 后请填写你的仓库地址
+Homepage = "https://github.com/"
+Documentation = "https://github.com/"
+
+[tool.setuptools.packages.find]
+include = ["SDLCore*"]
