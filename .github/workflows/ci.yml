@@ -45,8 +45,6 @@ jobs:
         run: |
           brew install sdl2 sdl2_image sdl2_ttf sdl2_mixer
 
-      # 不再单独为 Windows 安装，统一在下面 pip 安装
-
       # ---------- Python 依赖 ----------
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
@@ -59,10 +57,43 @@ jobs:
         run: |
           pip install -e .
           pip install pytest
-          # 在所有平台安装 pysdl2-dll，确保 Windows 有 DLL，其他平台无妨
-          pip install pysdl2-dll
 
-      # ---------- 确保测试目录存在 ----------
+      # ---------- Windows 专属：安装 pysdl2-dll ----------
+      - name: Install pysdl2-dll (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pip install pysdl2-dll --force-reinstall --no-cache-dir
+
+      # ---------- Windows 专属：获取 DLL 路径并设置环境变量 ----------
+      - name: Set SDL2_DLL_PATH (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          $dll_dir = $null
+          # 方法1：尝试导入 pysdl2_dll（即使报错，也可能已释放文件）
+          try {
+            $dll_dir = python -c "import pysdl2_dll, os; print(os.path.dirname(pysdl2_dll.__file__))" 2>$null
+            if ($LASTEXITCODE -ne 0) { throw "Import failed" }
+          } catch {
+            Write-Host "Import failed, trying pip show..."
+            # 方法2：通过 pip show 获取包位置
+            $pkg_info = pip show pysdl2-dll | Select-String "Location:"
+            if ($pkg_info) {
+              $location = ($pkg_info -split ":")[1].Trim()
+              $dll_dir = Join-Path $location "pysdl2_dll"
+            }
+          }
+          # 如果找到目录，设置环境变量
+          if ($dll_dir -and (Test-Path $dll_dir)) {
+            echo "SDL2_DLL_PATH=$dll_dir" | Out-File -FilePath $env:GITHUB_ENV -Append
+            echo "$dll_dir" | Out-File -FilePath $env:GITHUB_PATH -Append
+            Write-Host "SDL2_DLL_PATH set to $dll_dir"
+            Write-Host "Directory contents:"
+            dir $dll_dir
+          } else {
+            Write-Host "::warning::Could not locate pysdl2-dll directory. Tests may fail if they need SDL2."
+          }
+
+      # ---------- 确保测试目录存在（占位文件） ----------
       - name: Ensure test directory exists
         run: |
           if [ ! -d "tests" ]; then
@@ -74,19 +105,6 @@ jobs:
           fi
         shell: bash
 
-      # ---------- Windows 环境变量（SDL2_DLL_PATH） ----------
-      - name: Set SDL2_DLL_PATH (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          $dll_path = python -c "import pysdl2_dll, os; print(os.path.dirname(pysdl2_dll.__file__))" 2>$null
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Warning: pysdl2_dll module not found, DLL path may be missing"
-          } else {
-            echo "SDL2_DLL_PATH=$dll_path" | Out-File -FilePath $env:GITHUB_ENV -Append
-            echo "$dll_path" | Out-File -FilePath $env:GITHUB_PATH -Append
-            Write-Host "SDL2_DLL_PATH set to $dll_path"
-          }
-
       # ---------- 运行测试 ----------
       - name: Run tests
-        run: pytest -v   # 不指定路径，自动发现测试
+        run: pytest -v
