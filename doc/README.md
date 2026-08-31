@@ -42,7 +42,7 @@ pip install dist/sdlcore-0.1.0-py3-none-any.whl   # 安装引擎（构建产物�
 新手从零入门 SDLCore 请阅读 **[learn/README.html](learn/README.html)**（`doc/learn/`，共 11 章，含可运行示例）。
 
 > 本目录仅收录 **SDLCore 通用引擎层** 文档。游戏逻辑层文档
-> （加载界面 / 开始界面等启动流程场景）见 **[game_doc/](../game_doc/README.md)**。
+> （加载界面 / 开始界面等启动流程场景）见 `game_doc/`（游戏项目内，非本仓库发布内容）。
 
 > 每个 `.md` 均提供同名 **HTML 版**（`*.html`，内容同步）。
 > 重新生成：`python tools/md2html.py doc`（保留 `.md`，仅刷新 `.html`）。
