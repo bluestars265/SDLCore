@@ -7,7 +7,7 @@ name = "SDLCore"
 version = "0.1.0"
 description = "基于 PySDL2 的通用 GUI 引擎 + MOD 化游戏框架（控件 / 布局 / 场景 / 资源 / MOD 系统）"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 license = "Apache-2.0"
 keywords = ["pysdl2", "sdl2", "gui", "game-engine", "mod", "ui", "widgets"]
 classifiers = [
