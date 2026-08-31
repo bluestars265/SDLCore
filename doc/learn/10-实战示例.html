@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 实战示例</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>10 实战示例</h1>
+<p>目标：综合运用所学，组装一个<strong>可运行的完整界面</strong>（开始菜单 + 游戏内 HUD）。</p>
+<p>我们将编写一个 <code>demo_scene.py</code>（放在 <code>mods/base_game/</code>，作为主 mod 场景）， 包含两个场景：<code>menu</code>（开始菜单）与 <code>hud</code>（游戏内 HUD）。</p>
+<h2>1. 开始菜单场景（菜单按钮 + 图标）</h2>
+<pre><code class="language-python"># mods/base_game/demo_scene.py
+import os
+import sdl2
+from SDLCore.resource import resources
+from SDLCore.scene import Scene
+from SDLCore.ui.button import Button
+from SDLCore.ui.label import Label
+from SDLCore.ui.image import Image
+from SDLCore.ui.panel import Panel
+from SDLCore.ui.layout import VBoxLayout, HBoxLayout
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+LOGO = os.path.join(ROOT, &quot;resource&quot;, &quot;images&quot;, &quot;png&quot;, &quot;logo.png&quot;)
+
+
+class MenuScene(Scene):
+    &quot;&quot;&quot;开始菜单：logo + 菜单按钮。&quot;&quot;&quot;
+    def __init__(self, manager):
+        super().__init__(manager)
+        self._built = False
+
+    def on_enter(self):
+        if self._built:
+            return
+        self._built = True
+        self.ui.root_panel.color = (26, 28, 38, 255)
+
+        # logo（保持宽高比居中）
+        self.ui.root_panel.add_child(Image((0, 0, -1, 200), path=LOGO))
+
+        # 菜单面板：VBox 垂直排列
+        menu = Panel((0, 0, 360, 320), color=(30, 30, 40, 220),
+                     layout=VBoxLayout(spacing=12, padding=(30, 20, 30, 20)))
+        menu.add_child(Button((0, 0, -1, 52), text=&quot;开始游戏&quot;,
+                              callback=lambda: self.manager.switch(&quot;hud&quot;)))
+        menu.add_child(Button((0, 0, -1, 52), text=&quot;游戏设置&quot;,
+                              callback=lambda: print(&quot;打开设置&quot;)))
+        menu.add_child(Button((0, 0, -1, 52), text=&quot;退出&quot;,
+                              callback=lambda: print(&quot;退出游戏&quot;)))
+        self.ui.root_panel.add_child(menu)
+        self._relayout()
+
+    def _relayout(self):
+        w, h = self.game.window.size
+        # logo 位于上部；菜单面板水平居中
+        menu = self.ui.root_panel.children[1]
+        mw, mh = 360, 320
+        menu.set_rect(((w - mw) // 2, int(h * 0.5), mw, mh))
+
+    def on_resize(self, width, height):
+        if getattr(self, &quot;_built&quot;, False):
+            self._relayout()
+
+
+class HudScene(Scene):
+    &quot;&quot;&quot;游戏内 HUD：左上角资源面板 + 底部按钮条。&quot;&quot;&quot;
+    def __init__(self, manager):
+        super().__init__(manager)
+        self._built = False
+
+    def on_enter(self):
+        if self._built:
+            return
+        self._built = True
+        self.ui.root_panel.color = (60, 68, 54, 255)
+
+        # 左上角：资源统计
+        panel = Panel((20, 20, 200, 96), color=(0, 0, 0, 160),
+                      layout=VBoxLayout(spacing=6, padding=(14, 10, 14, 10)))
+        self.hp_label = Label((0, 0, -1, 22), text=&quot;生命: 100&quot;,
+                              color=(255, 255, 255, 255), font_size=&quot;16px&quot;,
+                              factory=self.game.factory)
+        self.gold_label = Label((0, 0, -1, 22), text=&quot;金币: 50&quot;,
+                                color=(255, 220, 0, 255), font_size=&quot;16px&quot;,
+                                factory=self.game.factory)
+        panel.add_child(self.hp_label)
+        panel.add_child(self.gold_label)
+        self.ui.root_panel.add_child(panel)
+
+        # 底部：暂停 / 返回菜单按钮
+        bar = Panel((0, 0, 320, 60), color=(0, 0, 0, 180),
+                    layout=HBoxLayout(spacing=12, padding=(16, 10, 16, 10)))
+        bar.add_child(Button((0, 0, 130, -1), text=&quot;暂停&quot;,
+                             callback=lambda: print(&quot;暂停游戏&quot;)))
+        bar.add_child(Button((0, 0, 130, -1), text=&quot;返回菜单&quot;,
+                             callback=lambda: self.manager.switch(&quot;menu&quot;)))
+        self.ui.root_panel.add_child(bar)
+
+    def on_resize(self, width, height):
+        if not getattr(self, &quot;_built&quot;, False):
+            return
+        self.ui.root_panel.children[1].set_rect(
+            ((width - 320) // 2, height - 80, 320, 60))
+
+    def update(self, delta_time):
+        super().update(delta_time)
+        # 每帧刷新 HUD 数值（示意）
+        if self._built:
+            self.hp_label.set_text(f&quot;生命: {100 - int(delta_time * 10)}&quot;)
+
+
+# ---- 注册到 base_game 主 mod（在 main.py 入口中调用） ----
+
+def register_scenes(api):
+    &quot;&quot;&quot;在 base_game 的 register(api) 中调用，注册实战场景。&quot;&quot;&quot;
+    api.register_scene(&quot;menu&quot;, MenuScene)
+    api.register_scene(&quot;hud&quot;, HudScene)</code></pre>
+<h2>2. 注册到 base_game 主 mod</h2>
+<p>在 <code>mods/base_game/main.py</code> 的 <code>register(api)</code> 中：</p>
+<pre><code class="language-python">demo = _load_mod_module(api, &quot;demo_scene.py&quot;)
+demo.register_scenes(api)          # 注册 menu / hud 两个场景</code></pre>
+<h2>3. 运行</h2>
+<pre><code class="language-bash">python test_main.py                # 或 python main.py</code></pre>
+<p>启动后进入 loading → start；通过 <code>SceneManager.switch("menu")</code> 进入开始菜单， 点击"开始游戏"切换到 HUD 场景，HUD 中点击"返回菜单"切回。</p>
+<h2>4. 复盘：用到了哪些知识</h2>
+<table><thead><tr><th>知识点</th><th>本章用法</th></tr></thead><tbody><tr><td><code>Scene</code> / <code>SceneManager</code></td><td><code>menu</code> / <code>hud</code> 两个场景、<code>switch</code> 切换</td></tr><tr><td><code>UIManager.root_panel</code></td><td>每个场景独立的 UI 树</td></tr><tr><td>布局系统</td><td><code>VBoxLayout</code> / <code>HBoxLayout</code>、<code>w/h=-1</code> 自适应</td></tr><tr><td>控件</td><td><code>Button</code> / <code>Label</code> / <code>Image</code></td></tr><tr><td>资源</td><td><code>resources.get</code> 加载 logo</td></tr><tr><td>生命周期</td><td><code>on_enter</code>（构建）、<code>on_resize</code>（自适应）、<code>update</code>（每帧刷新）</td></tr><tr><td>MOD</td><td>场景写在 <code>base_game</code>，经 <code>ModAPI.register_scene</code> 注册</td></tr></tbody></table>
+<p>下一章：遇到问题怎么办 —— <a href="11-常见问题.html">第 11 章：常见问题</a></p>
+</body>
+</html>

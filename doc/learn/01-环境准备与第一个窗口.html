@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 环境准备与第一个窗口</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>01 环境准备与第一个窗口</h1>
+<p>目标：安装 SDLCore 运行环境，并写出你的<strong>第一个 SDL2 窗口程序</strong>。</p>
+<h2>1. 环境要求</h2>
+<table><thead><tr><th>项目</th><th>要求</th></tr></thead><tbody><tr><td>Python</td><td>3.13 及以上（支持新式类型注解 <code>list[str]</code> / <code>A | None</code>）</td></tr><tr><td>图形库</td><td><strong>PySDL2</strong>（<code>sdl2</code>、<code>sdl2.ext</code>）+ 运行时 DLL（<code>pysdl2-dll</code>）</td></tr><tr><td>系统</td><td>Windows（本项目当前开发环境）</td></tr></tbody></table>
+<h2>2. 安装</h2>
+<pre><code class="language-bash">pip install pysdl2 pysdl2-dll</code></pre>
+<blockquote><strong>重要</strong>：<code>pysdl2-dll</code> 已内置 SDL2 全系列 DLL（含 <strong>SDL_image 2.8+</strong>，原生支持 SVG）。&lt;br&gt;无需手动设置 <code>PYSDL2_DLL_PATH</code>，直接 <code>import sdl2</code> 即可。</blockquote>
+<h2>3. 最小窗口程序</h2>
+<p>创建 <code>hello.py</code>（可放在项目根目录临时使用）：</p>
+<pre><code class="language-python"># hello.py —— 最小 SDL2 窗口
+import sdl2
+import sdl2.ext
+
+WIDTH, HEIGHT = 800, 600
+
+def main():
+    # 1) 初始化 SDL2
+    sdl2.ext.init()
+
+    # 2) 创建窗口（允许拖拽缩放）
+    window = sdl2.ext.Window(
+        &quot;Hello SDLCore&quot;,
+        size=(WIDTH, HEIGHT),
+        flags=sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN,
+    )
+    # 3) 创建硬件加速渲染器
+    renderer = sdl2.ext.Renderer(window, flags=sdl2.SDL_RENDERER_ACCELERATED)
+
+    # 4) 主循环
+    running = True
+    while running:
+        # 收集并处理事件
+        for event in sdl2.ext.get_events():
+            if event.type == sdl2.SDL_QUIT:      # 点击窗口关闭按钮
+                running = False
+
+        # 每帧：清屏 → 绘制 → 呈现
+        renderer.clear((40, 44, 56))
+        renderer.present()
+
+        sdl2.SDL_Delay(16)   # 锁帧约 60 FPS（禁止用 time.sleep）
+
+    # 5) 清理
+    window.close()
+    sdl2.SDL_Quit()
+
+if __name__ == &quot;__main__&quot;:
+    main()</code></pre>
+<p>运行：</p>
+<pre><code class="language-bash">python hello.py</code></pre>
+<p>你应该看到一个深色窗口，标题为 "Hello SDLCore"，可自由拖拽缩放。</p>
+<h2>4. 逐段讲解</h2>
+<ul><li><strong><code>sdl2.ext.init()</code></strong>：初始化 SDL2 全部子系统（视频、事件等）。</li><li><strong><code>sdl2.ext.Window(...)</code></strong>：创建窗口。<code>SDL_WINDOW_RESIZABLE</code> 必须包含，允许缩放。</li><li><strong><code>sdl2.ext.Renderer(window, flags=...)</code></strong>：硬件加速渲染器（GPU）。</li><li><strong>主循环</strong>：<code>get_events()</code> 取事件 → 清屏 → 绘制 → <code>present()</code> 呈现。</li><li><strong>帧率</strong>：<code>SDL_Delay(16)</code> 约等于 60 FPS。<strong>禁止使用 <code>time.sleep()</code></strong>。</li></ul>
+<h2>5. 为什么要用 SDLCore 而不用裸 SDL2？</h2>
+<p>裸 SDL2 只有"画点、画矩形、贴纹理"原语。SDLCore 在此基础上提供：</p>
+<pre><code>裸 SDL2                    SDLCore
+─────────────────────────────────────────
+手动管理矩形坐标      →    Widget（rect/abs_rect 自动计算）
+手动处理绘制顺序      →    控件树 + layer 图层
+每次重画全部内容      →    控件渲染 + 合批优化（BatchedRenderer）
+手动加载图片          →    ResourceManager 缓存 + 异步加载
+手动组织多个界面      →    Scene / SceneManager</code></pre>
+<p>下一章开始认识 SDLCore 的核心概念 —— <a href="02-核心概念与控件体系.html">第 2 章：核心概念与控件体系</a></p>
+</body>
+</html>

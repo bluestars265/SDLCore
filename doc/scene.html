@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scene / SceneManager（场景系统）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>Scene / SceneManager（场景系统）</h1>
+<p><strong>模块</strong>：<code>SDLCore/scene.py</code></p>
+<h2>概述</h2>
+<p>场景化管理框架：</p>
+<ul><li><strong><code>Scene</code></strong>：一个独立界面。每个场景拥有自己的 <code>UIManager</code>（UI 树），并通过</li></ul>
+<p><code>on_enter</code> / <code>on_exit</code> / <code>on_resize</code> 管理生命周期。<strong>Scene 仅提供生命周期管理， 不内置任何具体 UI 辅助方法——UI 树完全由子类在 <code>on_enter</code>（或构造时）自行构建。</strong></p>
+<ul><li><strong><code>SceneManager</code></strong>：按名称注册/切换场景，并把 <code>resize</code> / <code>handle_events</code> / <code>update</code> / <code>render</code></li></ul>
+<p>转发给当前场景。</p>
+<blockquote>项目演示场景的标题/说明/切换按钮等辅助能力位于游戏层 <code>game/scene_common.py</code>&lt;br&gt;（<code>DemoScene</code> 基类），不属于通用引擎层。</blockquote>
+<h2>Scene</h2>
+<h3>构造参数</h3>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>说明</th></tr></thead><tbody><tr><td><code>manager</code></td><td><code>SceneManager</code></td><td>✅</td><td>所属场景管理器；<code>self.game</code> 可访问宿主（window / factory 等）</td></tr></tbody></table>
+<h3>生命周期钩子</h3>
+<table><thead><tr><th>钩子</th><th>说明</th></tr></thead><tbody><tr><td><code>on_enter()</code></td><td>进入场景时调用（可在此构建 UI 树）</td></tr><tr><td><code>on_exit()</code></td><td>离开场景时调用（默认关闭系统输入法并清空输入焦点）</td></tr><tr><td><code>on_resize(w, h)</code></td><td>窗口尺寸变化时由 <code>resize</code> 自动调用（空实现，子类可按需重写，例如重新计算布局）</td></tr></tbody></table>
+<h3>转发方法</h3>
+<p><code>resize(w, h)</code> / <code>handle_events(events)</code> / <code>update(delta_time)</code> / <code>render(renderer)</code> → 全部转发给场景自身的 <code>self.ui</code>；其中 <code>resize</code> 还会调用 <code>on_resize(w, h)</code> 钩子。</p>
+<h2>场景间通信</h2>
+<p><code>SceneManager</code> 提供两种跨场景通信机制（各场景可通过 <code>self.manager.shared_data</code> / <code>self.manager.events</code> 或便捷属性 <code>self.shared_data</code> / <code>self.events</code> 访问）：</p>
+<h3>共享数据模型（<code>shared_data</code>）</h3>
+<p>普通 <code>dict</code>，所有场景共享同一对象，跨场景读写：</p>
+<pre><code class="language-python">self.shared_data[&quot;score&quot;] = 100          # 本场景写入
+other = self.manager.shared_data[&quot;score&quot;]  # 其他场景读取</code></pre>
+<h3>事件总线（<code>events</code>，<code>EventBus</code>）</h3>
+<p>发布 / 订阅机制（<code>on</code> / <code>off</code> / <code>emit</code> / <code>clear</code> / <code>has_listeners</code>）：</p>
+<pre><code class="language-python">def on_player_died(self, name):
+    ...
+
+self.events.on(&quot;player_died&quot;, self.on_player_died)   # 订阅
+self.events.emit(&quot;player_died&quot;, &quot;boss&quot;)               # 发布
+self.events.off(&quot;player_died&quot;, self.on_player_died)   # 取消（建议在 on_exit 中清理）</code></pre>
+<blockquote>事件处理器需要自行管理生命周期：建议在 <code>on_enter</code> 订阅、<code>on_exit</code> 取消，&lt;br&gt;避免切换场景后残留订阅。</blockquote>
+<h2>SceneManager</h2>
+<h3>构造参数</h3>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>说明</th></tr></thead><tbody><tr><td><code>game</code></td><td><code>object | None</code></td><td></td><td>宿主对象（如 <code>Game</code>），供场景通过 <code>self.game</code> 获取工厂等资源</td></tr></tbody></table>
+<h3>公共接口</h3>
+<table><thead><tr><th>方法</th><th>说明</th></tr></thead><tbody><tr><td><code>register(name, scene)</code></td><td>注册场景</td></tr><tr><td><code>get(name)</code></td><td>按名称获取场景</td></tr><tr><td><code>switch(name)</code></td><td>切换场景：先 <code>on_exit</code> 当前场景，再 <code>on_enter</code> 目标场景</td></tr><tr><td><code>resize / handle_events / update / render</code></td><td>转发给当前场景</td></tr></tbody></table>
+<h3>属性</h3>
+<p><code>current</code>（当前 <code>Scene</code>）、<code>current_name</code>（当前场景名）</p>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.scene import Scene, SceneManager
+from SDLCore.ui.label import Label
+
+class MainScene(Scene):
+    SCENE_NAME = &quot;main&quot;
+    NEXT_SCENE = &quot;setting&quot;
+
+    def on_enter(self):
+        if not hasattr(self, &quot;_built&quot;):
+            label = Label((100, 100, 200, 30), text=&quot;主界面&quot;,
+                          color=(0, 200, 200, 255), factory=self.game.factory)
+            self.ui.root_panel.add_child(label)
+            self._built = True
+
+sm = SceneManager(game)
+sm.register(MainScene.SCENE_NAME, MainScene(sm))
+sm.switch(MainScene.SCENE_NAME)   # 进入主场景
+
+# 切换场景：sm.switch(&quot;setting&quot;)</code></pre>
+<blockquote>项目演示：<code>main.py</code> 注册 6 个控件测试场景（按钮 / 输入框 / 面板 / 滚动 / 网格 / 进度条），&lt;br&gt;它们继承游戏层 <code>game/scene_common.DemoScene</code>（提供标题/说明/页面切换按钮），&lt;br&gt;各场景内通过 <code>Button</code> 的 <code>callback=lambda: self.manager.switch(...)</code> 实现页面跳转。</blockquote>
+</body>
+</html>

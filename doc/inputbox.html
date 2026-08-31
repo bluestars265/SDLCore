@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InputBox（文本输入框控件）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>InputBox（文本输入框控件）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/inputbox.py</code></p>
+<h2>概述</h2>
+<p>支持<strong>系统 IME（中文/日文输入法）</strong>的文本输入框：</p>
+<ul><li>点击框内激活（<code>SDL_StartTextInput</code> 启用 IME），点击框外失焦。</li><li><code>SDL_TEXTINPUT</code> 事件：输入法上屏文本插入光标处；<code>SDL_TEXTEDITING</code>：组合文本（拼音）灰色半透明显示。</li><li>按键：<code>Backspace</code>/<code>Delete</code> 删除、<code>←</code>/<code>→</code> 移动光标、<code>Home</code>/<code>End</code> 行首/行尾跳转、<code>Enter</code> 触发 <code>on_submit(text)</code>。</li><li><strong>标准编辑</strong>：<code>Ctrl+A</code> 全选、<code>Ctrl+C</code>/<code>Ctrl+X</code>/<code>Ctrl+V</code> 复制/剪切/粘贴（系统剪贴板）、</li></ul>
+<p><code>Shift+←/→</code> 与 <code>Shift+Home/End</code> 扩展选区、鼠标左键拖拽选择、输入时替换选区（半透明蓝高亮）。</p>
+<ul><li>文本过长时<strong>横向滚动</strong>（光标跟随），光标闪烁，渲染裁剪在输入框内。</li></ul>
+<h2>构造参数</h2>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>rect</code></td><td><code>tuple (x, y, w, h)</code></td><td>✅</td><td>—</td><td><strong>位置与大小</strong></td></tr><tr><td><code>font_path</code></td><td><code>str</code></td><td></td><td><code>None</code></td><td>字体文件路径；默认从 <code>resource/fonts/</code> 查找（回退系统字体）</td></tr><tr><td><code>font_size</code></td><td><code>str</code></td><td></td><td><code>"18px"</code></td><td>字号（如 <code>"18px"</code>、<code>"14pt"</code>）</td></tr><tr><td><code>on_submit</code></td><td><code>callable</code></td><td></td><td><code>None</code></td><td>回车回调，接收参数 <code>text</code></td></tr><tr><td><code>parent</code> / <code>visible</code> / <code>enabled</code></td><td>—</td><td></td><td>—</td><td>同 <code>Widget</code></td></tr><tr><td><code>factory</code></td><td><code>SpriteFactory</code></td><td>✅</td><td><code>None</code></td><td><strong>TEXTURE 渲染工厂</strong>（文字渲染必需）</td></tr></tbody></table>
+<h2>公共接口</h2>
+<ul><li>继承 <code>Widget</code> 全部接口</li><li><code>set_factory(factory)</code>：设置文字渲染工厂</li><li><code>set_text(text)</code>：设置输入框内容，光标移到末尾</li><li><code>update(delta_time)</code>：光标闪烁 + IME 候选窗口定位（由 <code>UIManager.update</code> 自动驱动）</li></ul>
+<h2>重要说明</h2>
+<ol><li><strong>IME 原生 UI</strong>：需在<strong>创建窗口之前</strong>设置 hint，否则系统输入法的候选词/组合条不显示：</li></ol>
+<pre><code class="language-python">   sdl2.SDL_SetHint(b&quot;SDL_IME_SHOW_UI&quot;, b&quot;1&quot;)</code></pre>
+<ol><li><code>update</code> 每帧调用由 <code>UIManager.update(delta_time)</code>（或场景）自动完成，无需手动调用。</li></ol>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.inputbox import InputBox
+
+box = InputBox(
+    (100, 100, 240, 40),
+    font_size=&quot;18px&quot;,
+    on_submit=lambda t: print(f&quot;输入内容: {t}&quot;),
+    factory=factory,
+)
+box.set_text(&quot;预设内容&quot;)</code></pre>
+</body>
+</html>

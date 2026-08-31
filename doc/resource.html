@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ResourceManager（资源管理器）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>ResourceManager（资源管理器）</h1>
+<p><strong>模块</strong>：<code>SDLCore/resource.py</code></p>
+<h2>概述</h2>
+<p>全局纹理资源管理器：统一缓存外部图片纹理（<code>TextureSprite</code>），避免重复加载。 <code>ImageButton</code> / <code>ProgressBar</code> 等使用外部图片的控件默认经其读取资源。</p>
+<h2>格式支持（含 SVG）</h2>
+<p>经 SDL_image（<code>IMG_Load</code>）解码，支持 <strong>PNG / JPG / BMP / GIF / TGA / SVG</strong> 等格式：</p>
+<ul><li><strong>SVG</strong>：SDL_image 2.8+ 内置矢量光栅化（pysdl2-dll 2.32.10 实测可用）。</li></ul>
+<p>组件传入 <code>.svg</code> 路径即可加载；SVG 按原始尺寸光栅化，渲染时由组件拉伸到目标矩形。</p>
+<ul><li>同步与异步加载对 SVG 同样适用。</li></ul>
+<h2>设计要点</h2>
+<ul><li><strong>同步加载</strong>：<code>get(path)</code> 缓存命中直接返回，否则立即加载并缓存。</li><li><strong>异步加载</strong>：<code>load_async(path)</code> 在<strong>后台线程</strong>用 <code>IMG_Load</code> 解码为 <code>SDL_Surface</code>；</li></ul>
+<p>主线程每帧调用 <code>process_pending()</code> 将就绪的 surface 转为纹理并缓存。</p>
+<ul><li><strong>线程约束</strong>：SDL 纹理必须在主线程（渲染线程）创建，因此异步仅负责后台解码，</li></ul>
+<p>纹理创建统一由主线程 <code>process_pending()</code> 完成（线程安全，内部使用锁保护）。</p>
+<h2>公共接口</h2>
+<table><thead><tr><th>方法</th><th>说明</th></tr></thead><tbody><tr><td><code>set_factory(factory)</code></td><td>设置 TEXTURE 渲染工厂</td></tr><tr><td><code>factory</code>（属性）</td><td>当前渲染工厂</td></tr><tr><td><code>get(path)</code></td><td>同步获取纹理（缓存命中复用）</td></tr><tr><td><code>has(path)</code></td><td>是否已缓存</td></tr><tr><td><code>load_async(path)</code></td><td>后台线程异步解码图片</td></tr><tr><td><code>process_pending()</code></td><td>主线程调用：将后台完成解码的图片转为纹理并缓存</td></tr></tbody></table>
+<h2>全局实例</h2>
+<pre><code class="language-python">from SDLCore.resource import resources   # 全局默认实例
+resources.set_factory(factory)            # 应用启动时注册渲染工厂</code></pre>
+<blockquote>全局实例面向单渲染器应用；多渲染器场景可各自创建 <code>ResourceManager(factory=...)</code>。</blockquote>
+<h2>与控件集成</h2>
+<ul><li><code>ImageButton</code>、<code>ProgressBar</code> 构造时若传 <code>factory</code>，会自动将其注册到全局资源管理器并加载图片。</li><li>也可显式传入 <code>resources=自定义实例</code> 覆盖默认。</li></ul>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.resource import resources
+
+# 同步（缓存）
+tex = resources.get(&quot;resource/images/foo.png&quot;)
+
+# 异步（后台解码，主循环每帧 process_pending 后可用）
+resources.load_async(&quot;resource/images/bar.png&quot;)
+# ... 主循环中： resources.process_pending()
+if resources.has(&quot;resource/images/bar.png&quot;):
+    tex = resources.get(&quot;resource/images/bar.png&quot;)</code></pre>
+</body>
+</html>

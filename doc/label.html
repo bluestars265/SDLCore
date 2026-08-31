@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Label（文字标签控件）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>Label（文字标签控件）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/label.py</code></p>
+<h2>概述</h2>
+<p>展示不同颜色文字的标签控件：文字以 GPU 纹理渲染（TEXTURE 模式），垂直居中、左对齐； 通过 <code>FontTTF</code> 具名样式机制支持任意颜色切换。</p>
+<h2>构造参数</h2>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>rect</code></td><td><code>tuple (x, y, w, h)</code></td><td>✅</td><td>—</td><td><strong>位置与大小</strong></td></tr><tr><td><code>text</code></td><td><code>str</code></td><td></td><td><code>""</code></td><td>显示文本</td></tr><tr><td><code>color</code></td><td><code>RGBA tuple</code></td><td></td><td><code>(255, 255, 255, 255)</code></td><td>文字颜色</td></tr><tr><td><code>font_path</code></td><td><code>str</code></td><td></td><td><code>None</code></td><td>字体文件路径；默认 <code>resource/fonts/</code>（回退系统字体）</td></tr><tr><td><code>font_size</code></td><td><code>str</code></td><td></td><td><code>"18px"</code></td><td>字号</td></tr><tr><td><code>parent</code> / <code>visible</code> / <code>enabled</code></td><td>—</td><td></td><td>—</td><td>同 <code>Widget</code></td></tr><tr><td><code>factory</code></td><td><code>SpriteFactory</code></td><td>✅</td><td><code>None</code></td><td><strong>TEXTURE 渲染工厂</strong>（文字渲染必需）</td></tr></tbody></table>
+<h2>公共接口</h2>
+<ul><li>继承 <code>Widget</code> 全部接口</li><li><code>set_text(text)</code>：更新显示文本</li><li><code>set_color(color)</code>：切换文字颜色（首次出现的颜色自动登记字体样式）</li><li><code>set_factory(factory)</code>：设置渲染工厂</li></ul>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.label import Label
+
+title = Label((20, 8, 240, 30), text=&quot;Mindustry-like TD&quot;, color=(0, 200, 200, 255), factory=factory)
+hint = Label((20, 44, 240, 24), text=&quot;提示信息&quot;, color=(180, 180, 180, 255), factory=factory)
+title.set_color((255, 128, 0, 255))   # 运行时改色
+title.set_text(&quot;新标题&quot;)               # 运行时改文</code></pre>
+</body>
+</html>

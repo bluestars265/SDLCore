@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ComboBox（下拉选择框控件）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>ComboBox（下拉选择框控件）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/combobox.py</code></p>
+<h2>概述</h2>
+<p>继承 <code>Widget</code> 的下拉选择框：头部矩形框（带边框）显示当前选中文本 + 右侧倒三角（▾）； 点击头部展开/收起下拉列表（单选 <code>ListBox</code>）。</p>
+<h2>关键设计：下拉浮于最上层</h2>
+<p>下拉容器<strong>不挂载在控件自身</strong>，而是通过 <code>_get_manager()</code> 找到 <code>UIManager</code>， 直接添加到 <strong><code>root_panel</code>（场景顶层）</strong> 并设置高 <code>layer</code>（<code>自身 layer + 100</code>）， 从而脱离任何容器（如 <code>ScrollPanel</code>）的裁剪，始终浮于界面最上层。 位置计算在头部正下方、宽度与头部一致；高度按 Item 数动态计算（最大 150px，超出显示滚动条）。</p>
+<h2>构造参数</h2>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>rect</code></td><td><code>tuple (x, y, w, h)</code></td><td>✅</td><td>—</td><td><strong>位置与大小（头部）</strong></td></tr><tr><td><code>items</code></td><td><code>list[str]</code></td><td>✅</td><td>—</td><td><strong>下拉选项</strong></td></tr><tr><td><code>selected_index</code></td><td><code>int</code></td><td></td><td><code>0</code></td><td>初始选中索引</td></tr><tr><td><code>on_select</code></td><td><code>callable</code></td><td></td><td><code>None</code></td><td>选择后回调 <code>on_select(text, index)</code></td></tr><tr><td><code>factory</code></td><td><code>SpriteFactory</code></td><td>✅</td><td><code>None</code></td><td><strong>TEXTURE 渲染工厂（文字渲染必需）</strong></td></tr><tr><td><code>id</code> / <code>layer</code> / <code>layout_weight</code></td><td>—</td><td></td><td>—</td><td>同 <code>Widget</code></td></tr></tbody></table>
+<h2>交互</h2>
+<ul><li>点击头部：展开/收起下拉。</li><li>点击下拉项：选中、收起、更新头部文本、回调 <code>on_select(text, index)</code>。</li><li>点击头部外部：自动收起。</li><li><code>set_enabled(False)</code>：禁用并收起下拉。</li></ul>
+<h2>清理</h2>
+<ul><li>收起时从父容器（<code>UIManager.root_panel</code>）<strong>移除</strong>下拉 Panel，防止泄漏与悬空渲染。</li><li><code>__del__</code> 兜底清理。</li></ul>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.combobox import ComboBox
+
+cb = ComboBox((100, 100, 180, 30), items=[&quot;红&quot;, &quot;绿&quot;, &quot;蓝&quot;],
+              selected_index=0,
+              on_select=lambda t, i: print(f&quot;选择: {t} ({i})&quot;),
+              factory=factory)</code></pre>
+<blockquote>JSON 配置（UIBuilder）：<code>{"type": "combobox", "id": "cbx1", "rect": [10,10,200,30],&lt;br&gt;"items": ["A","B","C"], "selected_index": 1, "on_select": "on_sel"}</code>。</blockquote>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ListBox（列表选择控件）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>ListBox（列表选择控件）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/listbox.py</code></p>
+<h2>概述</h2>
+<p>继承 <code>ScrollPanel</code> 的列表控件：内部 <code>content</code> 使用 <code>VBoxLayout</code>，每个 Item 为 <code>Panel</code>（背景可切换）包裹 <code>Label</code>。 支持多选（<code>Ctrl</code> 切换 / <code>Shift</code> 范围选择），选中项背景高亮。</p>
+<h2>构造参数</h2>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>rect</code></td><td><code>tuple (x, y, w, h)</code></td><td>✅</td><td>—</td><td><strong>位置与大小（视口）</strong></td></tr><tr><td><code>items</code></td><td><code>list[str]</code></td><td>✅</td><td>—</td><td><strong>列表项文本</strong></td></tr><tr><td><code>allow_multi_select</code></td><td><code>bool</code></td><td></td><td><code>True</code></td><td>是否允许多选</td></tr><tr><td><code>on_selection_changed</code></td><td><code>callable</code></td><td></td><td><code>None</code></td><td>选中变化后回调 <code>(items 文本列表)</code></td></tr><tr><td><code>factory</code></td><td><code>SpriteFactory</code></td><td>✅</td><td><code>None</code></td><td><strong>TEXTURE 渲染工厂（文字渲染必需）</strong></td></tr><tr><td><code>id</code> / <code>layer</code> / <code>layout_weight</code></td><td>—</td><td></td><td>—</td><td>同 <code>Widget</code></td></tr></tbody></table>
+<h2>交互（模拟 Ctrl/Shift）</h2>
+<ul><li><strong>单击</strong>：选中当前点击项。</li><li><strong>Ctrl + 单击</strong>：切换当前项选中状态（不影响其他项）。</li><li><strong>Shift + 单击</strong>：选中从锚点（上次点击项）到当前项的范围。</li><li>单选模式（<code>allow_multi_select=False</code>）：忽略 Ctrl/Shift，单击即单选。</li><li>选中项背景高亮（半透明蓝），未选中透明。</li><li>滚轮滚动由父类 <code>ScrollPanel</code> 提供；Item 点击消费事件不冒泡误触。</li></ul>
+<h2>接口</h2>
+<table><thead><tr><th>方法</th><th>说明</th></tr></thead><tbody><tr><td><code>set_items(new_items)</code></td><td>刷新列表（清空选中）</td></tr><tr><td><code>get_selected()</code></td><td>返回选中文本列表</td></tr><tr><td><code>get_selected_indices()</code></td><td>返回选中索引列表</td></tr></tbody></table>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.listbox import ListBox
+
+lb = ListBox((50, 50, 200, 200), items=[&quot;苹果&quot;, &quot;香蕉&quot;, &quot;橙子&quot;, &quot;葡萄&quot;],
+             allow_multi_select=True,
+             on_selection_changed=lambda texts: print(f&quot;选中: {texts}&quot;),
+             factory=factory)
+lb.set_items([&quot;一&quot;, &quot;二&quot;, &quot;三&quot;])     # 刷新
+print(lb.get_selected())</code></pre>
+<blockquote>JSON 配置（UIBuilder）：<code>{"type": "listbox", "id": "lb1", "rect": [10,10,200,180],&lt;br&gt;"items": ["A","B","C"], "on_selection_changed": "on_sel"}</code>。</blockquote>
+</body>
+</html>

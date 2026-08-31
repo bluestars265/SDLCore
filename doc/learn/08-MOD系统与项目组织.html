@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 MOD 系统与项目组织</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>08 MOD 系统与项目组织</h1>
+<p>目标：理解项目的 MOD 化组织方式 —— 主游戏也是 mod，第三方 mod 与之同机制。</p>
+<h2>1. 核心约定</h2>
+<pre><code>mods/
+├── base_game/       # 主游戏 mod（游戏主体，priority=0 最先加载）
+│   ├── mod.json     # 元数据
+│   ├── main.py      # 入口（register(api)）
+│   ├── loading_scene.py / start_scene.py ...
+│   └── resource/    # 素材
+└── demo_mod/        # 第三方 mod（depends base_game）</code></pre>
+<ul><li><strong>主游戏逻辑也是 mod</strong>（<code>base_game</code>），与第三方 mod 完全同机制。</li><li><code>main.py</code>（根）只负责：初始化 SDL2 → 加载 mods → 驱动主循环。</li><li><strong>场景均写在 base_game</strong>（游戏主体）；第三方 mod 通过 <code>ModAPI</code> 追加自己的内容。</li></ul>
+<h2>2. mod.json 元数据</h2>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;my_mod&quot;,
+  &quot;name&quot;: &quot;我的 Mod&quot;,
+  &quot;version&quot;: &quot;0.1.0&quot;,
+  &quot;priority&quot;: 10,
+  &quot;depends&quot;: [&quot;base_game&quot;],
+  &quot;entry&quot;: &quot;main.py&quot;
+}</code></pre>
+<table><thead><tr><th>字段</th><th>说明</th></tr></thead><tbody><tr><td><code>id</code></td><td>唯一标识</td></tr><tr><td><code>priority</code></td><td>越小越先加载（<code>base_game</code> = 0）</td></tr><tr><td><code>depends</code></td><td>依赖的 mod id（拓扑排序，依赖者后加载）</td></tr><tr><td><code>entry</code></td><td>入口模块相对路径</td></tr></tbody></table>
+<h2>3. 入口协议：register(api)</h2>
+<p>每个 mod 的入口约定导出 <code>register(api)</code>，由 <code>ModManager</code> 按序调用：</p>
+<pre><code class="language-python"># mods/my_mod/main.py
+def register(api):
+    # 1) 注册代码场景（类接收 manager 参数）
+    api.register_scene(&quot;my_scene&quot;, MyScene)
+
+    # 2) 注册配置型场景（file 相对本 mod 目录）
+    api.add_scene(&quot;menu&quot;, &quot;我的场景&quot;, &quot;scenes/menu/scene.json&quot;,
+                  bindings={&quot;on_click&quot;: lambda: print(&quot;点击&quot;)})
+
+    # 3) 注册自定义控件类型（供 JSON 场景按 type 使用）
+    api.register_component(&quot;blink&quot;, _build_blink)
+
+    # 4) 订阅全局事件
+    api.bind_events({&quot;mods.loaded&quot;: lambda: print(&quot;全部 mod 已加载&quot;)})</code></pre>
+<h2>4. ModAPI 门面速查</h2>
+<table><thead><tr><th>方法</th><th>说明</th></tr></thead><tbody><tr><td><code>register_scene(name, scene_cls)</code></td><td>注册代码场景类</td></tr><tr><td><code>add_scene(id, title, file, bindings)</code></td><td>注册 JSON 配置场景</td></tr><tr><td><code>register_component(type, factory)</code></td><td>注册自定义控件</td></tr><tr><td><code>bind_events(handlers)</code></td><td>订阅全局事件总线</td></tr><tr><td><code>resource_path(rel)</code></td><td>mod 目录下的绝对路径</td></tr><tr><td><code>get_mod(mod_id)</code></td><td>访问其他 mod 的元数据</td></tr></tbody></table>
+<h2>5. 跨 mod 资源引用</h2>
+<p>素材归 <code>base_game</code> 统一管理，其他 mod 场景用 <strong><code>@mod_id/相对路径</code></strong> 前缀引用：</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;image_button&quot;,
+  &quot;image_normal&quot;: &quot;@base_game/resource/images/Blue/Default/button_rectangle_flat.png&quot;
+}</code></pre>
+<ul><li>无前缀路径相对<strong>当前 mod</strong> 目录；带前缀从<strong>指定 mod</strong> 目录解析。</li></ul>
+<h2>6. 主 mod 如何加载同目录场景模块</h2>
+<p><code>mods</code> 目录不是 Python 包（无法相对导入），主 mod 用 <code>importlib</code> 加载场景文件：</p>
+<pre><code class="language-python">import importlib.util
+import os
+
+def _load_mod_module(api, rel):
+    path = api.resource_path(rel)
+    name = f&quot;_base_game_{os.path.splitext(os.path.basename(rel))[0]}&quot;
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+def register(api):
+    loading = _load_mod_module(api, &quot;loading_scene.py&quot;)
+    api.register_scene(&quot;loading&quot;, loading.LoadingScene)</code></pre>
+<h2>7. 测试 mod 与双启动入口</h2>
+<table><thead><tr><th>入口</th><th>加载目录</th><th>用途</th></tr></thead><tbody><tr><td><code>python main.py</code></td><td><code>mods/</code></td><td>正式启动（不含测试 mod）</td></tr><tr><td><code>python test_main.py</code></td><td><code>mods/</code> + <code>test_mods/</code></td><td>开发/验证（含控件测试场景）</td></tr></tbody></table>
+<p><code>test_main.py</code> 通过子类化 <code>Game</code> 覆盖 <code>MODS_DIRS</code> 实现多目录加载。</p>
+<p>下一章学习配置驱动 UI —— <a href="09-配置驱动UI.html">第 9 章：配置驱动 UI</a></p>
+</body>
+</html>

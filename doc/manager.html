@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UIManager（UI 管理器）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>UIManager（UI 管理器）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/manager.py</code></p>
+<h2>概述</h2>
+<p>UI 总控组件：</p>
+<ul><li>持有<strong>全屏透明根面板</strong> <code>root_panel</code>（顶层容器），通过 <code>resize</code> 随窗口尺寸实时铺满。</li><li>维护输入焦点 <code>focused_widget</code>（供 <code>InputBox</code> 等文本控件注册）。</li><li>事件分发：无坐标的 IME 文本事件（<code>SDL_TEXTINPUT</code>/<code>SDL_TEXTEDITING</code>）<strong>直达焦点控件</strong>；</li></ul>
+<p>其余鼠标/键盘事件<strong>逆序遍历</strong>子控件分发，控件消费（返回 <code>True</code>）即停止。</p>
+<ul><li>递归驱动各控件的 <code>update</code> 与 <code>render</code>。</li></ul>
+<h2>构造</h2>
+<pre><code class="language-python">ui = UIManager()
+ui.root_panel.add_child(widget)   # 挂载顶层控件</code></pre>
+<p>无需参数。</p>
+<h2>公共接口</h2>
+<table><thead><tr><th>方法</th><th>说明</th></tr></thead><tbody><tr><td><code>resize(width, height)</code></td><td>根面板铺满全屏，递归刷新绝对坐标（<strong>每帧调用</strong>，支持窗口缩放）</td></tr><tr><td><code>set_focus(widget)</code></td><td>注册/清空焦点控件（传 <code>None</code> 表示失焦）</td></tr><tr><td><code>handle_events(events)</code></td><td>事件分发（传入 <code>sdl2.ext.get_events()</code> 的结果）</td></tr><tr><td><code>update(delta_time)</code></td><td>递归调用 UI 树中各控件的 <code>update</code></td></tr><tr><td><code>render(renderer)</code></td><td>渲染整棵 UI 树</td></tr></tbody></table>
+<h2>属性</h2>
+<table><thead><tr><th>属性</th><th>说明</th></tr></thead><tbody><tr><td><code>root_panel</code></td><td>全屏透明 <code>Panel</code>，作为顶层容器</td></tr><tr><td><code>focused_widget</code></td><td>当前持有输入焦点的控件</td></tr></tbody></table>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.manager import UIManager
+from SDLCore.ui.button import Button
+
+ui = UIManager()
+ui.root_panel.add_child(Button((100, 100, 120, 50), text=&quot;确定&quot;))
+
+# 主循环中：
+# ui.resize(width, height)       # 每帧，支持缩放
+# ui.handle_events(events)       # 每帧，传入事件列表
+# ui.update(delta_time)          # 每帧
+# ui.render(renderer)            # 每帧</code></pre>
+</body>
+</html>

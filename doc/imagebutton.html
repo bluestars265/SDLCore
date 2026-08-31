@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ImageButton（图片按钮控件）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>ImageButton（图片按钮控件）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/imagebutton.py</code></p>
+<h2>概述</h2>
+<p>继承 <code>Button</code>。三种状态（常态/悬停/按下）各分配一张图片，图片被<strong>缩放（拉伸）到按钮矩形大小</strong>； 某状态未配置图片时，该状态自动回退为 <code>Button</code> 的颜色渲染。</p>
+<h2>构造参数</h2>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>rect</code></td><td><code>tuple (x, y, w, h)</code></td><td>✅</td><td>—</td><td><strong>位置与大小</strong></td></tr><tr><td><code>image_normal</code></td><td><code>str</code>（图片路径）</td><td>✅</td><td><code>None</code></td><td><strong>常态图片</strong>（推荐必须）</td></tr><tr><td><code>image_hover</code></td><td><code>str</code>（图片路径）</td><td></td><td><code>None</code></td><td>悬停图片</td></tr><tr><td><code>image_pressed</code></td><td><code>str</code>（图片路径）</td><td></td><td><code>None</code></td><td>按下图片</td></tr><tr><td><code>text</code></td><td><code>str</code></td><td></td><td><code>""</code></td><td><strong>可选文字</strong>（非空且 <code>factory</code> 可用时居中显示）</td></tr><tr><td><code>text_color</code></td><td><code>RGBA</code></td><td></td><td><code>(255,255,255,255)</code></td><td>文字颜色</td></tr><tr><td><code>callback</code></td><td><code>callable</code></td><td></td><td><code>None</code></td><td>点击回调</td></tr><tr><td><code>parent</code> / <code>visible</code> / <code>enabled</code></td><td>—</td><td></td><td>—</td><td>同 <code>Widget</code></td></tr><tr><td><code>factory</code></td><td><code>SpriteFactory</code></td><td>✅</td><td><code>None</code></td><td><strong>TEXTURE 渲染工厂</strong>；传入则立即加载三态图片（文字渲染也依赖）</td></tr></tbody></table>
+<h2>公共接口</h2>
+<ul><li>继承 <code>Button</code>（<code>set_text</code> / <code>set_callback</code> / <code>set_position</code> 等）</li><li><code>set_factory(factory)</code>：设置工厂并加载三态图片纹理</li></ul>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.imagebutton import ImageButton
+
+btn = ImageButton(
+    (100, 100, 160, 50),
+    text=&quot;开始游戏&quot;,                    # 可选文字（居中）
+    text_color=(255, 255, 255, 255),
+    image_normal=&quot;resource/images/Blue/Default/button_rectangle_flat.png&quot;,
+    image_hover=&quot;resource/images/Blue/Default/button_rectangle_gradient.png&quot;,
+    image_pressed=&quot;resource/images/Blue/Default/button_rectangle_depth_flat.png&quot;,
+    callback=lambda: print(&quot;点击&quot;),
+    factory=factory,          # SpriteFactory(TEXTURE)
+)
+
+# text 为空则不渲染文字，仅显示图片
+btn2 = ImageButton((100, 180, 160, 50),
+                   image_normal=&quot;resource/images/Blue/Default/button_rectangle_flat.png&quot;,
+                   factory=factory)
+
+# SVG 矢量素材（SDL_image 2.8+ 支持 .svg，渲染时拉伸到按钮大小）
+btn3 = ImageButton((100, 260, 180, 56),
+                   text=&quot;SVG 按钮&quot;,
+                   image_normal=&quot;resource/images/svg/按钮框.svg&quot;,
+                   image_hover=&quot;resource/images/svg/按钮框_悬停.svg&quot;,
+                   factory=factory)</code></pre>
+<blockquote>提示：三态图片路径应指向项目 <code>resource/images/</code> 下的素材，支持 PNG / SVG 等格式。&lt;br&gt;JSON 配置可用 <code>"text"</code> / <code>"text_color"</code> 声明文字；mod 场景中跨 mod 引用素材用&lt;br&gt;<code>"@base_game/resource/images/..."</code> 前缀。</blockquote>
+</body>
+</html>

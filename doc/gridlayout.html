@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridLayout（网格布局容器）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>GridLayout（网格布局容器）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/gridlayout.py</code></p>
+<h2>概述</h2>
+<p>继承 <code>Panel</code> 的网格布局容器：子控件按指定列数自动网格排列，行数由子控件数量自动计算 （<code>rows = ceil(子控件数 / cols)</code>）。添加 / 移除子控件、或自身尺寸变化时自动重新布局。</p>
+<h2>构造参数</h2>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>rect</code></td><td><code>tuple (x, y, w, h)</code></td><td>✅</td><td>—</td><td><strong>位置与大小</strong></td></tr><tr><td><code>cols</code></td><td><code>int</code></td><td></td><td><code>1</code></td><td>列数（行数自动计算）</td></tr><tr><td><code>cell_width</code></td><td><code>int</code></td><td></td><td><code>0</code></td><td>固定单元格宽度；<code>0</code> 表示自动均分父容器宽度</td></tr><tr><td><code>cell_height</code></td><td><code>int</code></td><td></td><td><code>0</code></td><td>固定单元格高度；<code>0</code> 表示自动均分父容器高度</td></tr><tr><td><code>h_spacing</code></td><td><code>int</code></td><td></td><td><code>5</code></td><td>水平间距（px）</td></tr><tr><td><code>v_spacing</code></td><td><code>int</code></td><td></td><td><code>5</code></td><td>垂直间距（px）</td></tr><tr><td><code>padding</code></td><td><code>tuple (left, top, right, bottom)</code></td><td></td><td><code>(5, 5, 5, 5)</code></td><td>内边距</td></tr><tr><td><code>parent</code> / <code>visible</code> / <code>enabled</code></td><td>—</td><td>—</td><td>—</td><td>同 <code>Widget</code></td></tr></tbody></table>
+<h2>尺寸计算规则</h2>
+<ul><li>可用宽度 = <code>容器宽 - padding.left - padding.right</code></li><li>可用高度 = <code>容器高 - padding.top - padding.bottom</code></li><li><code>cell_width == 0</code>：<code>(可用宽度 - h_spacing × (cols - 1)) // cols</code></li><li><code>cell_height == 0</code>：<code>(可用高度 - v_spacing × (rows - 1)) // rows</code></li><li>第 <code>i</code> 个控件：<code>row = i // cols</code>，<code>col = i % cols</code></li><li><code>x = padding.left + col × (cell_width + h_spacing)</code></li><li><code>y = padding.top + row × (cell_height + v_spacing)</code></li></ul>
+<h2>公共接口</h2>
+<ul><li>继承 <code>Panel</code> / <code>Widget</code> 全部接口</li><li><code>relayout()</code>：手动触发重新布局（添加/移除/尺寸变化时自动调用）</li></ul>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.gridlayout import GridLayout
+from SDLCore.ui.button import Button
+
+grid = GridLayout((50, 50, 300, 200), cols=2, h_spacing=10, v_spacing=10)
+for i in range(6):
+    grid.add_child(Button((0, 0, 0, 0), text=f&quot;按钮{i}&quot;))   # 位置/大小由布局自动分配
+
+grid.relayout()   # 需要时可手动重排</code></pre>
+</body>
+</html>

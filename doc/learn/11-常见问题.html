@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 常见问题（FAQ）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>11 常见问题（FAQ）</h1>
+<p>收集开发中常遇到的问题与排查思路。</p>
+<h2>Q1. 文字显示不出来？</h2>
+<p><strong>原因</strong>：<code>Label</code> / <code>Button</code>（文字）/ <code>InputBox</code> 需要 <code>factory</code>（<code>SpriteFactory(TEXTURE)</code>）才能渲染文字。</p>
+<p><strong>解决</strong>：</p>
+<pre><code class="language-python">factory = sdl2.ext.SpriteFactory(sdl2.ext.TEXTURE, renderer=renderer)
+Label((0, 0, 0, 24), text=&quot;文字&quot;, factory=factory)   # 构造时传入
+# 或稍后 set_factory(factory)</code></pre>
+<p><strong>另外</strong>：字体从 <code>resource/fonts/</code> 或系统字体查找（中文用 SimHei 等）；找不到会报错。</p>
+<h2>Q2. 图片/纹理被拉伸到整个屏幕？</h2>
+<p><strong>原因</strong>：<code>renderer.copy(sprite, dstrect=...)</code> <strong>必须显式传 dstrect</strong>；缺省会把纹理拉伸到整个渲染目标。</p>
+<p><strong>解决</strong>：总是传 <code>dstrect=(x, y, w, h)</code>。</p>
+<pre><code class="language-python">renderer.copy(sprite, dstrect=(100, 100, 200, 50))</code></pre>
+<h2>Q3. 窗口缩放后控件位置不对？</h2>
+<p><strong>原因</strong>：忘记每帧用实时窗口尺寸刷新 UI。</p>
+<p><strong>解决</strong>：主循环中每帧调用 <code>ui.resize(w, h)</code>（或 <code>scene_manager.resize(w, h)</code>）：</p>
+<pre><code class="language-python">w, h = window.size
+ui.resize(w, h)          # 根面板铺满 + 递归刷新绝对坐标 + 触发 on_resize</code></pre>
+<h2>Q4. 输入中文没反应 / 没有候选词？</h2>
+<p><strong>检查点</strong>：</p>
+<ul><li>必须在<strong>创建窗口之前</strong>设置 IME hint：</li></ul>
+<pre><code class="language-python">sdl2.SDL_SetHint(b&quot;SDL_IME_SHOW_UI&quot;, b&quot;1&quot;)   # 在 Window() 之前</code></pre>
+<ul><li><code>InputBox</code> 需要 <code>factory</code>。</li><li>点击输入框激活后 <code>SDL_StartTextInput()</code> 才生效。</li></ul>
+<h2>Q5. 点击按钮没反应？</h2>
+<p><strong>检查点</strong>：</p>
+<ul><li>控件是否 <code>visible</code> 且 <code>enabled</code>？</li><li>是否被上层 <code>layer</code> 更大的控件"盖住"（事件被消费）？</li><li><code>abs_rect</code> 是否正确（是否调用了 <code>update_abs_position</code> / 每帧 <code>resize</code>）？</li><li>回调是否在<strong>按下并释放</strong>时触发（<code>Button</code> 行为）？</li></ul>
+<h2>Q6. 运行时提示 "未设置渲染工厂" / "IMG_Load 失败"？</h2>
+<ul><li><code>resources.set_factory(factory)</code> 是否已调用（应用启动时一次）？</li><li>图片路径是否存在？SVG 是否用了 SDL_image 2.8+（pysdl2-dll 2.32.10 已内置）？</li></ul>
+<h2>Q7. 帧率被卡 / 循环太快？</h2>
+<ul><li><strong>禁止 <code>time.sleep()</code></strong>。主循环用 <code>sdl2.SDL_Delay(16)</code> 锁帧。</li><li>Delta Time 用 <code>sdl2.SDL_GetTicks()</code> 计算：</li></ul>
+<pre><code class="language-python">now = sdl2.SDL_GetTicks()
+dt = (now - prev) / 1000.0
+prev = now</code></pre>
+<h2>Q8. 半透明颜色显示为纯色？</h2>
+<p>半透明绘制需要 alpha 混合。SDLCore 控件已自动处理 （<code>enable_alpha_blend</code> + <code>BatchedRenderer</code> 自动把半透明矩形移出合批）。 若自绘代码，需先开启混合：<code>sdl2.SDL_SetRenderDrawBlendMode(renderer, sdl2.SDL_BLENDMODE_BLEND)</code>。</p>
+<h2>Q9. 控件性能如何优化？</h2>
+<ul><li>不透明矩形会<strong>合批</strong>（<code>BatchedRenderer</code>）：同色一次 <code>SDL_RenderFillRects</code>。</li><li>尽量少用半透明矩形（会破坏合批）。</li><li>纹理经 <code>ResourceManager</code> 缓存，同一路径只加载一次。</li><li>异步加载大图：<code>load_async</code> + 每帧 <code>process_pending</code>。</li></ul>
+<h2>Q10. 我想新增一个游戏场景，该怎么做？</h2>
+<p>按约定，场景写在<strong>主 mod（<code>mods/base_game/</code>）</strong>：</p>
+<ol><li>在 <code>mods/base_game/</code> 新建 <code>my_scene.py</code>，定义 <code>class MyScene(Scene)</code>。</li><li>在 <code>mods/base_game/main.py</code> 的 <code>register(api)</code> 中：</li></ol>
+<pre><code class="language-python">scene_mod = _load_mod_module(api, &quot;my_scene.py&quot;)
+api.register_scene(&quot;my_scene&quot;, scene_mod.MyScene)</code></pre>
+<ol><li>运行时 <code>manager.switch("my_scene")</code> 切换进入。</li></ol>
+<h2>更多参考</h2>
+<ul><li>各控件参考文档：<code>doc/</code>（widget.md / panel.md / layout.md / button.md …）</li><li>游戏逻辑层文档：<code>game_doc/</code>（loading.md / start.md）</li><li>教程：<a href="README.html">README.md</a></li></ul>
+</body>
+</html>

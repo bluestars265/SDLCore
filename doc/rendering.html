@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>渲染性能优化</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>渲染性能优化</h1>
+<h2>矩形合批（BatchedRenderer）</h2>
+<p><strong>模块</strong>：<code>SDLCore/ui/batcher.py</code></p>
+<p><code>UIManager.render</code> 渲染整棵 UI 树时，用 <code>BatchedRenderer</code> 包装渲染器：</p>
+<ul><li><strong>不透明纯色矩形</strong>（<code>fill</code> / <code>draw_rect</code>）被收集为绘制命令；</li><li>按 <code>(类型, 颜色)</code> <strong>全量分组</strong>，同色矩形用 <code>SDL_RenderFillRects</code> / <code>SDL_RenderDrawRects</code></li></ul>
+<p><strong>一次提交多个</strong>（大幅减少 Draw Call：如 6 个同色按钮的填充从 6 次降为 1 次）；</p>
+<ul><li>绘制顺序按各组<strong>首次出现序号</strong>保持（z 顺序正确）。</li><li><strong>半透明矩形</strong>与<strong>裁剪区域内矩形</strong>保持逐次绘制（保证 alpha 混合与裁剪正确）；</li></ul>
+<p><code>copy</code>（纹理）前自动 flush 已收集命令（保证 z 顺序）。</p>
+<p>裁剪感知通过 <code>SDLCore.ui.set_render_clip(renderer, rect)</code> 钩子实现 （<code>BatchedRenderer</code> 与原生 <code>Renderer</code> 均兼容）；<code>InputBox</code> / <code>ScrollPanel</code> 已改用该钩子。</p>
+<h2>脏标记（Dirty Flag）</h2>
+<ul><li><code>Widget</code> 维护 <code>_dirty</code> 重绘标记与 <code>mark_dirty()</code>。</li><li>状态 / 尺寸 / 可见性变化时自动置脏：<code>set_rect</code> / <code>set_visible</code> / <code>set_enabled</code>，</li></ul>
+<p>以及各控件状态 setter（<code>set_checked</code> / <code>set_selected</code> / <code>set_value</code> / <code>set_text</code> 等）。</p>
+<ul><li>文字控件（<code>Label</code> / <code>InputBox</code> / <code>Button</code> fit_content）的<strong>纹理已按 <code>(text, color)</code> 缓存</strong>，</li></ul>
+<p>内容未变时直接复用纹理，不重复生成（<code>FontTTF.render_text</code> 仅按需调用）。</p>
+<h2>适用说明</h2>
+<ul><li>合批主要收益来自<strong>大量同色不透明矩形</strong>（按钮列表、进度条、列表项背景）。</li><li>文字 / 图片（<code>copy</code>）在 SDL2 下无法跨精灵合并（无批量复制 API），其优化依赖纹理缓存（已实现）。</li><li>复杂静态 UI 可进一步结合容器级离屏缓存（RenderTarget）扩展。</li></ul>
+</body>
+</html>

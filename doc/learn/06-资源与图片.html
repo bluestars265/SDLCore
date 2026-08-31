@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 资源与图片</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>06 资源与图片</h1>
+<p>目标：学会加载图片（含 SVG）、使用缓存与异步加载。</p>
+<h2>1. ResourceManager —— 全局资源管理器</h2>
+<p><code>SDLCore/resource.py</code> 的全局单例 <code>resources</code> 负责图片纹理的加载与缓存：</p>
+<pre><code class="language-python">from SDLCore.resource import resources
+
+resources.set_factory(factory)          # 应用启动时注册渲染工厂（一次即可）</code></pre>
+<h3>同步加载（缓存命中直接返回）</h3>
+<pre><code class="language-python">sprite = resources.get(&quot;mods/base_game/resource/images/png/logo.png&quot;)
+w, h = sprite.size                      # 获取原始尺寸</code></pre>
+<h3>异步加载（后台线程解码，不阻塞主循环）</h3>
+<pre><code class="language-python">resources.load_async(&quot;resource/images/foo.png&quot;)
+# ... 主循环中每帧调用：
+resources.process_pending()             # 将解码完成的 surface 转为纹理
+if resources.has(&quot;resource/images/foo.png&quot;):
+    tex = resources.get(&quot;resource/images/foo.png&quot;)</code></pre>
+<blockquote>SDL 纹理必须在主线程创建，所以异步只做后台解码，转纹理统一在主线程。</blockquote>
+<h3>状态查询</h3>
+<pre><code class="language-python">resources.has(path)        # 是否已缓存
+resources.is_loading(path) # 是否正在后台解码
+resources.failed(path)     # 是否已确认加载失败（不再重试）</code></pre>
+<h2>2. 支持的图片格式（含 SVG）</h2>
+<p>经 SDL_image（<code>IMG_Load</code>）解码，支持：<strong>PNG / JPG / BMP / GIF / TGA / SVG</strong>。</p>
+<ul><li><strong>SVG</strong>：SDL_image 2.8+ 内置矢量光栅化（pysdl2-dll 2.32.10 实测可用）。</li><li>组件传 <code>.svg</code> 路径即可直接使用；渲染时拉伸到目标矩形。</li></ul>
+<pre><code class="language-python"># SVG 素材与 PNG 用法完全一致
+Image((0, 0, 200, 60), path=&quot;mods/base_game/resource/images/svg/按钮框.svg&quot;)
+ImageButton((0, 0, 200, 60), image_normal=&quot;.../按钮框.svg&quot;, factory=factory)</code></pre>
+<h2>3. 使用图片的控件</h2>
+<table><thead><tr><th>控件</th><th>图片入口</th></tr></thead><tbody><tr><td><code>Image</code></td><td><code>path</code> / <code>texture</code>（保持宽高比居中）</td></tr><tr><td><code>ImageButton</code></td><td><code>image_normal / image_hover / image_pressed</code></td></tr><tr><td><code>ProgressBar</code></td><td><code>fill_image</code>（填充纹理）、<code>indicator_image</code>（前端标记）</td></tr><tr><td><code>ScrollPanel</code></td><td><code>thumb_image</code>（滚动条滑块图片）</td></tr></tbody></table>
+<p>它们内部都经 <code>resources.get()</code> 获取纹理，<strong>同一路径只加载一次</strong>。</p>
+<h2>4. 加载界面如何预加载全部资源</h2>
+<p><code>main.py</code> 启动时收集全部 mod 的 <code>resource/images/</code> 图片，注入 <code>loading</code> 场景：</p>
+<pre><code class="language-python"># 收集所有 mod 的图片路径
+paths = []
+for info in mod_manager.mods.values():
+    img_dir = os.path.join(info.dir, &quot;resource&quot;, &quot;images&quot;)
+    for root, _dirs, files in os.walk(img_dir):
+        for f in files:
+            if f.lower().endswith((&quot;.png&quot;, &quot;.jpg&quot;, &quot;.svg&quot;, ...)):
+                paths.append(os.path.join(root, f))
+
+# loading 场景每帧：
+for p in paths:
+    if not resources.has(p) and not resources.is_loading(p) and not resources.failed(p):
+        resources.load_async(p)</code></pre>
+<h2>5. 透明度与混合</h2>
+<ul><li>半透明颜色（<code>A &lt; 255</code>）会被 <code>BatchedRenderer</code> 自动移出合批单独绘制，混合正确。</li><li>图片控件渲染前会自动设置 <code>SDL_BLENDMODE_BLEND</code>，PNG 透明背景正确显示。</li></ul>
+<p>下一章学习场景系统 —— <a href="07-场景系统.html">第 7 章：场景系统</a></p>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProgressBar（进度条控件）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>ProgressBar（进度条控件）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/progressbar.py</code></p>
+<h2>概述</h2>
+<p>继承 <code>Widget</code> 的横向进度条：数值映射（<code>min</code>~<code>max</code>）、背景 + 进度填充 + 边框渲染。 填充宽度 = <code>进度比 × 控件宽度</code>，从左侧开始。</p>
+<h2>构造参数</h2>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>rect</code></td><td><code>tuple (x, y, w, h)</code></td><td>✅</td><td>—</td><td><strong>位置与大小</strong></td></tr><tr><td><code>min</code></td><td><code>float</code></td><td></td><td><code>0.0</code></td><td>最小值</td></tr><tr><td><code>max</code></td><td><code>float</code></td><td></td><td><code>100.0</code></td><td>最大值（<code>max &lt;= min</code> 时自动设为 <code>min + 1</code>）</td></tr><tr><td><code>value</code></td><td><code>float</code></td><td></td><td><code>0.0</code></td><td>当前值（自动钳制在 <code>[min, max]</code>）</td></tr><tr><td><code>bg_color</code></td><td><code>RGBA tuple</code></td><td></td><td><code>(40, 40, 40, 255)</code></td><td>背景色</td></tr><tr><td><code>fill_color</code></td><td><code>RGBA tuple</code></td><td></td><td><code>(0, 200, 80, 255)</code></td><td>填充色</td></tr><tr><td><code>border_color</code></td><td><code>RGBA tuple</code></td><td></td><td><code>(80, 80, 80, 255)</code></td><td>边框色</td></tr><tr><td><code>border_width</code></td><td><code>int</code></td><td></td><td><code>1</code></td><td>边框宽度（px）</td></tr><tr><td><code>show_text</code></td><td><code>bool</code></td><td></td><td><code>False</code></td><td>是否显示百分比文字（本阶段预留，<code>text_sprite</code> 供后续集成）</td></tr><tr><td><code>fill_image</code></td><td><code>str | None</code></td><td></td><td><code>None</code></td><td>填充纹理图片路径；非空时替代 <code>fill_color</code></td></tr><tr><td><code>indicator_image</code></td><td><code>str | None</code></td><td></td><td><code>None</code></td><td>前端标记图片路径（如箭头），绘制在进度末端随进度移动</td></tr><tr><td><code>factory</code></td><td><code>SpriteFactory | None</code></td><td></td><td><code>None</code></td><td>TEXTURE 渲染工厂（使用图片时必需传入）</td></tr><tr><td><code>parent</code> / <code>visible</code> / <code>enabled</code></td><td>—</td><td>—</td><td>—</td><td>同 <code>Widget</code></td></tr></tbody></table>
+<blockquote>说明：<code>fill_image</code> 会拉伸适配填充矩形，无需关心原始尺寸；<code>indicator_image</code> 保持图片原始宽高比，&lt;br&gt;中心对齐到填充末端、垂直居中。图片加载失败或未传 <code>factory</code> 时打印警告并回退为纯色模式。</blockquote>
+<h2>公共接口</h2>
+<table><thead><tr><th>方法</th><th>说明</th></tr></thead><tbody><tr><td><code>set_value(val)</code></td><td>更新当前值（自动钳制）</td></tr><tr><td><code>set_range(min_val, max_val)</code></td><td>更新范围，并调整当前值适应新范围</td></tr><tr><td><code>get_progress()</code></td><td>返回 <code>0.0 ~ 1.0</code> 的进度比 <code>(value - min) / (max - min)</code></td></tr><tr><td><code>set_bg_color(color)</code> / <code>set_fill_color(color)</code> / <code>set_border_color(color)</code></td><td>运行时修改样式（渲染自动生效）</td></tr><tr><td><code>set_factory(factory)</code></td><td>运行时设置渲染工厂并重新加载图片</td></tr></tbody></table>
+<h2>属性</h2>
+<p><code>min</code>、<code>max</code>、<code>value</code>（可直接读写）、<code>text_sprite</code>（预留）</p>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.progressbar import ProgressBar
+
+pb = ProgressBar((50, 50, 300, 30), value=0, min=0, max=100)
+pb.set_value(65)                 # 进度 65%
+pb.set_range(0, 200)             # 调整范围
+pb.set_fill_color((0, 150, 255, 255))  # 改填充色
+
+# 每帧渲染：pb.render(renderer)</code></pre>
+</body>
+</html>

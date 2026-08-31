@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MOD 系统</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>MOD 系统</h1>
+<p><strong>模块</strong>：<code>SDLCore/modmanager.py</code></p>
+<h2>概述</h2>
+<p>约定式 MOD 加载：每个 mod 是一个目录（含 <code>mod.json</code> 元数据 + 可选入口模块 + 场景/资源）。 <strong>主游戏逻辑也是 mod</strong>（<code>mods/base_game/</code>，priority=0 最先加载），与第三方 mod 同机制。</p>
+<h2>目录结构</h2>
+<pre><code>mods/
+├── base_game/                # 主游戏 mod（游戏主体，priority=0 最先加载）
+│   ├── mod.json
+│   ├── main.py               # 入口（register(api)，注册 loading/start 场景）
+│   ├── loading_scene.py      # 开始加载界面（代码场景）
+│   ├── start_scene.py        # 开始界面 / 主菜单（代码场景）
+│   └── resource/…            # 素材资源（images/...，含 SVG）
+└── demo_mod/                 # 演示第三方 mod（depends base_game）
+
+test_mods/                    # 测试 mod 目录（正式启动 main.py 不加载）
+└── test_game/                # 控件测试 mod（depends base_game）</code></pre>
+<ul><li>正式启动：<code>python main.py</code>（仅加载 <code>mods/</code>；base_game 主 mod 优先，随后其他 mod）。</li><li>测试启动：<code>python test_main.py</code>（加载 <code>mods/</code> + <code>test_mods/</code>）。</li><li>场景（loading / start 等）均写在 base_game（游戏主体）中。</li></ul>
+<h2>mod.json 元数据</h2>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;demo_mod&quot;,
+  &quot;name&quot;: &quot;演示 Mod&quot;,
+  &quot;version&quot;: &quot;0.1.0&quot;,
+  &quot;priority&quot;: 10,
+  &quot;depends&quot;: [&quot;base_game&quot;],
+  &quot;entry&quot;: &quot;main.py&quot;
+}</code></pre>
+<table><thead><tr><th>字段</th><th>说明</th></tr></thead><tbody><tr><td><code>id</code></td><td>唯一标识</td></tr><tr><td><code>priority</code></td><td>越小越先加载（<code>base_game</code> = 0）</td></tr><tr><td><code>depends</code></td><td>依赖的 mod id（拓扑排序，依赖者后加载）</td></tr><tr><td><code>entry</code></td><td>入口模块相对路径（如 <code>main.py</code>）</td></tr></tbody></table>
+<h2>入口协议</h2>
+<p>每个 mod 的入口约定导出 <code>register(api)</code>，由 <code>ModManager</code> 按序调用：</p>
+<pre><code class="language-python"># mods/demo_mod/main.py
+def register(api):
+    api.register_component(&quot;blink&quot;, _build_blink)        # 自定义控件
+    api.add_scene(&quot;demo&quot;, &quot;演示 Mod&quot;, &quot;scenes/demo/scene.json&quot;,
+                  bindings={&quot;on_demo_click&quot;: lambda: print(&quot;点击&quot;)})
+    api.bind_events({&quot;event_name&quot;: handler})            # 全局事件</code></pre>
+<h2>ModAPI 门面</h2>
+<table><thead><tr><th>方法</th><th>说明</th></tr></thead><tbody><tr><td><code>register_component(type_name, factory)</code></td><td>注册自定义控件类型（供 JSON 场景使用）</td></tr><tr><td><code>register_scene(name, scene_cls)</code></td><td>注册代码型场景类</td></tr><tr><td><code>add_scene(scene_id, title, file, bindings)</code></td><td>注册配置型场景（file 相对 mod 目录）</td></tr><tr><td><code>bind_events(handlers)</code></td><td>向全局 <code>EventBus</code> 注册处理器</td></tr><tr><td><code>resource_path(rel)</code></td><td>mod 资源目录绝对路径</td></tr><tr><td><code>get_mod(mod_id)</code></td><td>访问其他 mod 元数据</td></tr></tbody></table>
+<h2>加载时序</h2>
+<pre><code>main.py 引擎初始化
+  → ModManager.discover()（扫描 mods/，读 mod.json，priority+depends 拓扑排序）
+  → ModManager.load_all()（按序调用各 mod 入口 register(api)）
+  → ModManager.install_scenes()（配置场景设置切换链并注册到 SceneManager）
+  → 进入首场景</code></pre>
+<h2>配置型场景</h2>
+<ul><li>场景 JSON 由 <code>UIBuilder</code> 构建（见 <a href="builder.html">builder.md</a>），支持 <code>$ref</code> 组件复用、<code>bindings</code> 事件注入、<code>id</code>/<code>layer</code>。</li><li><code>ModScene</code>（<code>SDLCore/scene.py</code>）加载 JSON 场景并自动添加底部场景切换栏。</li><li>图片相对路径经 <code>resource_resolver</code> 映射到 mod 资源目录。</li></ul>
+<h2>跨 mod 资源引用</h2>
+<p>素材资源归主 mod（<code>base_game</code>）统一管理，其他 mod 场景用 <strong><code>@mod_id/相对路径</code></strong> 前缀跨 mod 引用：</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;image_button&quot;,
+  &quot;image_normal&quot;: &quot;@base_game/resource/images/Blue/Default/button_rectangle_flat.png&quot;
+}</code></pre>
+<ul><li>无前缀路径相对<strong>当前 mod</strong> 目录解析。</li><li>前缀路径从<strong>指定 mod</strong> 目录解析（找不到该 mod 时回退相对当前 mod）。</li></ul>
+<h2>边界（明确不做）</h2>
+<ul><li>代码沙箱 / 隔离：约定为<strong>可信 mod</strong>。</li><li>热加载 / 运行时卸载。</li><li>依赖版本解析：仅 <code>priority + depends</code> 简单排序。</li><li>mod 打包下载：文件系统即分发。</li></ul>
+</body>
+</html>

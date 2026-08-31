@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 常用控件</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>04 常用控件</h1>
+<p>目标：认识 SDLCore 内置的常用控件与关键用法。完整 API 见 <code>doc/</code> 对应参考文档。</p>
+<blockquote>多数控件需要 <code>factory</code>（<code>SpriteFactory(TEXTURE)</code>）才能渲染文字/图片。</blockquote>
+<h2>1. Label —— 文字标签</h2>
+<pre><code class="language-python">from SDLCore.ui.label import Label
+
+Label((10, 10, 0, 24), text=&quot;普通文字&quot;, color=(255, 255, 255, 255),
+      font_size=&quot;16px&quot;, factory=factory)</code></pre>
+<ul><li>只读文字，不接收事件。<code>set_text()</code> 运行时更新。</li></ul>
+<h2>2. Button —— 按钮</h2>
+<pre><code class="language-python">from SDLCore.ui.button import Button
+
+btn = Button((50, 50, 160, 48), text=&quot;确定&quot;,
+             callback=lambda: print(&quot;确定被点击&quot;))
+btn.set_callback(new_callback)     # 运行时改回调</code></pre>
+<ul><li>三态颜色：常态灰 / 悬停浅蓝 / 按下深蓝。</li><li>回调在<strong>按钮内按下并释放</strong>时触发。</li></ul>
+<h2>3. ImageButton —— 图片按钮（三态图片）</h2>
+<pre><code class="language-python">from SDLCore.ui.imagebutton import ImageButton
+
+img_btn = ImageButton(
+    (50, 50, 180, 56), text=&quot;开始游戏&quot;, text_color=(255, 255, 255, 255),
+    image_normal=&quot;resource/images/Blue/Default/button_rectangle_flat.png&quot;,
+    image_hover=&quot;resource/images/Blue/Default/button_rectangle_gradient.png&quot;,
+    image_pressed=&quot;resource/images/Blue/Default/button_rectangle_depth_flat.png&quot;,
+    callback=lambda: print(&quot;开始游戏&quot;),
+    factory=factory,
+)</code></pre>
+<ul><li>图片支持 <strong>PNG / SVG</strong> 等格式；某状态缺图时回退为 <code>Button</code> 颜色渲染。</li><li>文字可选（<code>text</code> 非空时居中叠加）。</li></ul>
+<h2>4. InputBox —— 文本输入框（支持中文 IME）</h2>
+<pre><code class="language-python">from SDLCore.ui.inputbox import InputBox
+
+InputBox((50, 50, 300, 40), font_size=&quot;18px&quot;, factory=factory,
+         on_submit=lambda t: print(&quot;提交:&quot;, t))</code></pre>
+<ul><li>点击激活启用系统输入法，支持中文拼音候选、光标、选区、复制粘贴。</li><li>焦点由 <code>UIManager</code> 自动管理。</li></ul>
+<h2>5. CheckBox / RadioGroup —— 复选 / 单选</h2>
+<pre><code class="language-python">from SDLCore.ui.checkbox import CheckBox
+from SDLCore.ui.radiogroup import RadioGroup
+
+CheckBox((50, 50, 200, 30), text=&quot;启用特效&quot;, factory=factory,
+         callback=lambda v: print(&quot;选中:&quot;, v))
+
+RadioGroup((50, 100, 220, 120), options=[&quot;低&quot;, &quot;中&quot;, &quot;高&quot;],
+           selected_index=1, factory=factory,
+           on_select=lambda text, idx: print(text, idx))</code></pre>
+<h2>6. Slider —— 滑动条</h2>
+<pre><code class="language-python">from SDLCore.ui.slider import Slider
+
+Slider((50, 50, 300, 30), min_val=0, max_val=100, value=50, step=5,
+       factory=factory, on_value_changed=lambda v: print(&quot;音量:&quot;, v))</code></pre>
+<ul><li>支持点击轨道跳转、拖拽滑块、<code>step</code> 步长对齐、数值显示。</li></ul>
+<h2>7. ListBox —— 列表（多选 + Ctrl/Shift）</h2>
+<pre><code class="language-python">from SDLCore.ui.listbox import ListBox
+
+ListBox((50, 50, 220, 160), items=[&quot;选项 A&quot;, &quot;选项 B&quot;, &quot;选项 C&quot;],
+        allow_multi_select=True, factory=factory,
+        on_selection_changed=lambda texts: print(&quot;选中:&quot;, texts))</code></pre>
+<h2>8. ComboBox —— 下拉选择框</h2>
+<pre><code class="language-python">from SDLCore.ui.combobox import ComboBox
+
+ComboBox((50, 50, 200, 30), items=[&quot;方案一&quot;, &quot;方案二&quot;, &quot;方案三&quot;],
+         selected_index=0, factory=factory,
+         on_select=lambda text, idx: print(text, idx))</code></pre>
+<ul><li>下拉列表以高 layer 浮层挂在根面板上，不受容器裁剪。</li></ul>
+<h2>9. ProgressBar —— 进度条</h2>
+<pre><code class="language-python">from SDLCore.ui.progressbar import ProgressBar
+
+bar = ProgressBar((50, 50, 300, 26), value=55, factory=factory)
+bar.set_value(80)      # 0~100
+bar.set_progress(0.8)  # 或用 0.0~1.0</code></pre>
+<ul><li>支持纯色填充、<code>fill_image</code> 纹理填充、<code>indicator_image</code> 前端标记。</li></ul>
+<h2>10. Image —— 图片控件</h2>
+<pre><code class="language-python">from SDLCore.ui.image import Image
+
+Image((50, 50, 480, 280), path=&quot;resource/images/png/logo.png&quot;)
+# 或直接传已加载纹理
+Image((50, 50, 480, 280), texture=sprite)</code></pre>
+<ul><li><strong>保持宽高比缩放并居中，不填充背景</strong>，适合 logo / 图标。</li></ul>
+<h2>11. ScrollPanel —— 滚动面板</h2>
+<pre><code class="language-python">from SDLCore.ui.scrollpanel import ScrollPanel
+from SDLCore.ui.layout import VBoxLayout
+
+sp = ScrollPanel((50, 50, 260, 200), content_size=(260, 600))  # 内容比视口高
+sp.content.set_layout(VBoxLayout(spacing=6))
+for i in range(20):
+    sp.add_child(Label((8, 0, -1, 24), text=f&quot;第 {i} 行&quot;, factory=factory))</code></pre>
+<ul><li>滚轮滚动、滚动条拖拽、视口裁剪；<code>add_child</code> 挂到内部 <code>content</code>。</li></ul>
+<h2>12. Panel —— 容器（透明/半透明背景）</h2>
+<pre><code class="language-python">from SDLCore.ui.panel import Panel
+
+Panel((100, 100, 400, 300), color=(30, 30, 40, 220))   # RGBA，A 控制透明度
+Panel((100, 100, 400, 300), color=(0, 0, 0, 0))        # 完全透明</code></pre>
+<h2>速查表</h2>
+<table><thead><tr><th>控件</th><th>典型用途</th><th>关键参数</th></tr></thead><tbody><tr><td><code>Label</code></td><td>静态文字</td><td><code>text/color/font_size</code></td></tr><tr><td><code>Button</code></td><td>点击动作</td><td><code>text/callback</code></td></tr><tr><td><code>ImageButton</code></td><td>图片按钮</td><td><code>image_normal/hover/pressed/text</code></td></tr><tr><td><code>InputBox</code></td><td>文本输入</td><td><code>font_size/on_submit</code></td></tr><tr><td><code>CheckBox</code></td><td>布尔开关</td><td><code>checked/callback</code></td></tr><tr><td><code>RadioGroup</code></td><td>互斥选择</td><td><code>options/selected_index/on_select</code></td></tr><tr><td><code>Slider</code></td><td>数值调节</td><td><code>min_val/max_val/step</code></td></tr><tr><td><code>ListBox</code></td><td>列表选择</td><td><code>items/allow_multi_select</code></td></tr><tr><td><code>ComboBox</code></td><td>下拉选择</td><td><code>items/selected_index</code></td></tr><tr><td><code>ProgressBar</code></td><td>进度显示</td><td><code>value/fill_color/fill_image</code></td></tr><tr><td><code>Image</code></td><td>图片展示</td><td><code>path/texture</code></td></tr><tr><td><code>ScrollPanel</code></td><td>滚动区域</td><td><code>content_size/thumb_image</code></td></tr><tr><td><code>Panel</code></td><td>容器</td><td><code>color/layout</code></td></tr></tbody></table>
+<p>下一章学习事件与自定义控件 —— <a href="05-事件与交互.html">第 5 章：事件与交互</a></p>
+</body>
+</html>

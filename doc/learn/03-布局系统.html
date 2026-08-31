@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 布局系统</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>03 布局系统</h1>
+<p>目标：不再手工计算每个控件的坐标，而是用<strong>布局对象</strong>自动排布子控件。</p>
+<h2>1. 为什么需要布局？</h2>
+<p>手写坐标在窗口尺寸变化时会很快失控。SDLCore 的 <code>Layout</code> 机制让容器<strong>自动计算</strong>子控件位置。</p>
+<pre><code class="language-python">from SDLCore.ui.panel import Panel
+from SDLCore.ui.layout import VBoxLayout, HBoxLayout, GridLayout</code></pre>
+<h2>2. VBoxLayout：垂直堆叠</h2>
+<pre><code class="language-python">panel = Panel((100, 80, 400, 320), color=(30, 30, 40, 230),
+              layout=VBoxLayout(spacing=10, padding=(20, 20, 20, 20)))
+panel.add_child(Button((0, 0, -1, 48), text=&quot;按钮 1&quot;))   # w=-1 → 填满可用宽度
+panel.add_child(Button((0, 0, -1, 48), text=&quot;按钮 2&quot;))
+panel.add_child(Button((0, 0, -1, 48), text=&quot;按钮 3&quot;))</code></pre>
+<p>效果：三个按钮自上而下等距排列，宽度自动占满（减 padding）。</p>
+<p><strong><code>w == -1</code> 表示填满可用宽度</strong>，是布局中最重要的自适应约定之一。</p>
+<h2>3. HBoxLayout：水平排列</h2>
+<pre><code class="language-python">bar = Panel((100, 80, 400, 60), layout=HBoxLayout(spacing=8))
+bar.add_child(Button((0, 0, 100, -1), text=&quot;左&quot;))    # h=-1 → 填满高度
+bar.add_child(Button((0, 0, 100, -1), text=&quot;中&quot;))
+bar.add_child(Button((0, 0, 100, -1), text=&quot;右&quot;))</code></pre>
+<h2>4. GridLayout：网格排布</h2>
+<pre><code class="language-python">grid = Panel((100, 80, 420, 260), color=(30, 30, 40, 230),
+             layout=GridLayout(cols=3, h_spacing=10, v_spacing=10,
+                               padding=(16, 16, 16, 16)))
+for i in range(6):
+    grid.add_child(Button((0, 0, -1, -1), text=f&quot;格子 {i}&quot;))</code></pre>
+<p>效果：3 列 × 2 行，行数自动计算。子控件 <code>w/h = -1</code> 填满单元格。</p>
+<h2>5. 参数说明</h2>
+<table><thead><tr><th>布局</th><th>参数</th><th>默认</th><th>说明</th></tr></thead><tbody><tr><td><code>VBoxLayout</code></td><td><code>spacing</code></td><td>5</td><td>子项垂直间距</td></tr><tr><td></td><td><code>padding</code></td><td><code>(0,0,0,0)</code></td><td>内边距 <code>(左,上,右,下)</code></td></tr><tr><td></td><td><code>align</code></td><td><code>"stretch"</code></td><td>子项对齐方式</td></tr><tr><td><code>HBoxLayout</code></td><td>同上</td><td>—</td><td>水平版本</td></tr><tr><td><code>GridLayout</code></td><td><code>cols</code></td><td>1</td><td>列数</td></tr><tr><td></td><td><code>cell_width/height</code></td><td>0</td><td>固定单元格尺寸（0=自动均分）</td></tr><tr><td></td><td><code>h_spacing/v_spacing</code></td><td>5</td><td>单元格间距</td></tr><tr><td></td><td><code>padding</code></td><td><code>(5,5,5,5)</code></td><td>内边距</td></tr></tbody></table>
+<h2>6. 自适应尺寸（fit_content 与 Constraints）</h2>
+<p><code>Widget.measure(constraints)</code> 返回控件的<strong>首选尺寸</strong>，供布局按内容自适应：</p>
+<pre><code class="language-python">from SDLCore.ui.layout import Constraints
+
+label = Label((0, 0, 0, 24), text=&quot;一段文字&quot;)
+w, h = label.measure()          # 按文字内容测量，如 (96, 24)</code></pre>
+<ul><li><code>Constraints(min_w, max_w, min_h, max_h)</code> 约束测量范围。</li><li><code>fit_content=True</code> 的 <code>Button</code> 会按文字宽度自动撑开。</li></ul>
+<h2>7. 何时重新布局？</h2>
+<p>布局是<strong>即时生效</strong>的：<code>add_child</code> / <code>remove_child</code> / 容器 <code>set_rect</code>（含窗口 resize）时， <code>Panel</code> 会自动调用布局对象重排子控件。</p>
+<pre><code class="language-python">panel.set_rect((50, 50, 500, 400))   # 子控件立即按新尺寸重排</code></pre>
+<p>下一章逐个认识常用控件 —— <a href="04-常用控件.html">第 4 章：常用控件</a></p>
+</body>
+</html>

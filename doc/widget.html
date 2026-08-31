@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Widget（控件基类）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>Widget（控件基类）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/widget.py</code></p>
+<h2>概述</h2>
+<p>所有 GUI 控件的抽象基类，定义通用接口：坐标定位、可见性/可用性、容器管理、生命周期钩子。</p>
+<h2>构造参数</h2>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>rect</code></td><td><code>tuple (x, y, w, h)</code></td><td>✅</td><td>—</td><td><strong>相对父容器的位置与大小</strong></td></tr><tr><td><code>parent</code></td><td><code>Widget | None</code></td><td></td><td><code>None</code></td><td>父容器</td></tr><tr><td><code>visible</code></td><td><code>bool</code></td><td></td><td><code>True</code></td><td>是否可见（影响渲染与事件）</td></tr><tr><td><code>enabled</code></td><td><code>bool</code></td><td></td><td><code>True</code></td><td>是否可用（禁用后不接收事件）</td></tr></tbody></table>
+<h2>属性</h2>
+<p><code>rect</code>（相对坐标）、<code>abs_rect</code>（绝对坐标）、<code>parent</code>、<code>children</code>、<code>visible</code>、<code>enabled</code></p>
+<h2>公共接口</h2>
+<table><thead><tr><th>方法</th><th>说明</th></tr></thead><tbody><tr><td><code>update_abs_position(px, py)</code></td><td>递归刷新本控件及所有子控件的绝对坐标</td></tr><tr><td><code>set_rect(rect)</code></td><td>设置相对矩形，并刷新绝对坐标（含子控件）</td></tr><tr><td><code>set_position(x, y)</code></td><td>仅改变位置（宽高不变）</td></tr><tr><td><code>set_size(w, h)</code></td><td>仅改变宽高（位置不变）</td></tr><tr><td><code>set_visible(visible)</code></td><td>切换可见性</td></tr><tr><td><code>set_enabled(enabled)</code></td><td>切换可用性</td></tr><tr><td><code>set_opacity(opacity)</code></td><td>设置透明度（0.0 全透明 ~ 1.0 不透明）</td></tr><tr><td><code>add_child(widget)</code></td><td>挂载子控件，立即刷新其绝对坐标</td></tr><tr><td><code>remove_child(widget)</code></td><td>移除子控件并解除父子关系</td></tr><tr><td><code>handle_event(event) -&gt; bool</code></td><td>事件处理，返回 <code>True</code> 表示消费；内置 <code>MOUSEMOTION</code> 悬停跟踪</td></tr><tr><td><code>update(delta_time)</code></td><td>每帧更新（子类可重写）</td></tr><tr><td><code>render(renderer)</code></td><td>绘制（由子类实现）</td></tr></tbody></table>
+<h2>悬停钩子</h2>
+<p>基类通过 <code>_update_hover(px, py)</code> 维护 <code>_hovered</code> 状态（利用 <code>_contains</code> 判定）， 鼠标<strong>进入/离开</strong>控件时各调用一次对应钩子，便于实现提示框等悬停交互：</p>
+<table><thead><tr><th>钩子</th><th>说明</th></tr></thead><tbody><tr><td><code>on_mouse_enter()</code></td><td>鼠标进入控件时调用（子类可重写）</td></tr><tr><td><code>on_mouse_leave()</code></td><td>鼠标离开控件时调用（子类可重写）</td></tr></tbody></table>
+<blockquote>说明：未重写 <code>handle_event</code> 的控件自动获得悬停跟踪；重写了 <code>handle_event</code>&lt;br&gt;的控件（如 <code>Button</code>、<code>InputBox</code>）需在自身 <code>MOUSEMOTION</code> 分支调用&lt;br&gt;<code>self._update_hover(x, y)</code> 以启用钩子（这些内置控件已默认接入）。</blockquote>
+<h2>透明度支持</h2>
+<p>所有控件（<code>Panel</code> / <code>Button</code> / <code>ImageButton</code> / <code>Label</code> / <code>InputBox</code> / <code>CheckBox</code> / <code>RadioGroup</code> / <code>Slider</code> / <code>ListBox</code> / <code>ComboBox</code> / <code>ScrollPanel</code> / <code>ProgressBar</code> / <code>GridLayout</code>） 均支持<strong>整体透明度</strong>：</p>
+<ul><li>调用 <code>widget.set_opacity(0.0~1.0)</code> 或直接设 <code>widget.opacity</code>。</li><li>影响该控件<strong>直接绘制的全部元素</strong>：纯色填充 / 边框 / 对勾 / 三角 / 文字 / 图片纹理。</li><li><strong>透明度沿容器子树传播</strong>：父容器 <code>opacity × 子控件 opacity</code> 为子控件的有效渲染透明度</li></ul>
+<p>（如 <code>Panel</code> 半透明时，其内所有子控件同时变半透明）。</p>
+<pre><code class="language-python">panel = Panel((0, 0, 300, 200))
+panel.set_opacity(0.6)                     # 面板整体半透明（背景 + 子控件）
+
+btn = Button((10, 10, 100, 40), text=&quot;确定&quot;)
+btn.set_opacity(0.5)                       # 按钮自身半透明
+
+# 组合：按钮最终有效透明度 = 0.6 × 0.5 = 0.3
+panel.add_child(btn)</code></pre>
+<blockquote>实现：颜色 alpha 经 <code>apply_opacity(color, opacity)</code> 调制；纹理经&lt;br&gt;<code>SDL_SetTextureAlphaMod</code> + <code>SDL_BLENDMODE_BLEND</code> 调制。半透明颜色会被&lt;br&gt;<code>BatchedRenderer</code> 自动移出合批单独绘制，保证混合正确。</blockquote>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.button import Button
+
+btn = Button((10, 20, 100, 40), text=&quot;确定&quot;)   # 必要参数：位置 + 大小
+btn.set_position(50, 60)                        # 移动
+btn.set_size(120, 48)                           # 缩放
+btn.set_visible(True)                           # 显隐
+btn.set_enabled(False)                          # 禁用</code></pre>
+</body>
+</html>

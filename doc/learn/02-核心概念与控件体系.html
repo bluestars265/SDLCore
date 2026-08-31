@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 核心概念与控件体系</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>02 核心概念与控件体系</h1>
+<p>目标：理解 SDLCore 最基本的抽象 —— <code>Widget</code>（控件），以及控件如何组成一棵树。</p>
+<h2>1. 一切皆 Widget</h2>
+<p>所有可见可交互的东西（按钮、文字、面板、输入框…）都是 <code>Widget</code> 的子类。 <code>Widget</code> 基类（<code>SDLCore/ui/widget.py</code>）定义了三组通用能力：</p>
+<table><thead><tr><th>能力</th><th>说明</th></tr></thead><tbody><tr><td><strong>坐标</strong></td><td><code>rect</code>（相对父容器）/ <code>abs_rect</code>（世界绝对坐标）</td></tr><tr><td><strong>状态</strong></td><td><code>visible</code>（可见性）、<code>enabled</code>（可用性）、<code>layer</code>（图层）、<code>opacity</code>（透明度）</td></tr><tr><td><strong>生命周期</strong></td><td><code>handle_event()</code>、<code>update(dt)</code>、<code>render(renderer)</code></td></tr></tbody></table>
+<h3>坐标系统</h3>
+<pre><code class="language-python"># rect = (x, y, w, h)，x/y 是【相对父容器】的偏移
+btn = Button((50, 30, 160, 48), text=&quot;确定&quot;)
+
+# 常用坐标方法
+btn.set_position(20, 10)      # 仅改位置
+btn.set_size(200, 56)         # 仅改尺寸
+btn.set_rect((0, 0, 200, 56)) # 同时改位置与尺寸</code></pre>
+<ul><li><code>rect</code> 是<strong>相对坐标</strong>；渲染与事件检测使用 <code>abs_rect</code>（由 <code>update_abs_position()</code> 递归计算）。</li><li>放入容器后，<code>abs_rect = 容器绝对坐标 + 自身 rect</code>。</li></ul>
+<h3>状态控制</h3>
+<pre><code class="language-python">btn.set_visible(True)     # 显示/隐藏（隐藏后不渲染、不接收事件）
+btn.set_enabled(False)    # 禁用（仍显示，但不接收事件）
+btn.set_opacity(0.5)      # 透明度 0.0~1.0（父容器会向下传播透明度）</code></pre>
+<h2>2. 控件树</h2>
+<p><code>Panel</code> 是<strong>容器控件</strong>：可以挂载任意子控件，组成树状结构。</p>
+<pre><code class="language-python">from SDLCore.ui.panel import Panel
+from SDLCore.ui.button import Button
+
+panel = Panel((0, 0, 400, 300), color=(30, 30, 40, 220))
+btn = Button((20, 20, 160, 48), text=&quot;按钮 A&quot;)
+panel.add_child(btn)          # 挂载子控件</code></pre>
+<ul><li>渲染：容器先画自身背景，再按 <strong>layer 从低到高</strong> 画子控件。</li><li>事件：按 <strong>layer 从高到低</strong> 分发，某控件消费（返回 <code>True</code>）即停止。</li><li>添加/移除：<code>add_child(widget)</code> / <code>remove_child(widget)</code>。</li></ul>
+<pre><code class="language-python">panel.remove_child(btn)   # 解除父子关系</code></pre>
+<h2>3. 图层（layer）</h2>
+<p><code>layer</code> 决定重叠控件的绘制顺序与事件优先级：</p>
+<pre><code class="language-python">low  = Panel((10, 10, 200, 200))   # layer 默认 0
+high = Panel((50, 50, 200, 200))   # layer 默认 0
+high.layer = 10                     # 提到上层</code></pre>
+<ul><li>绘制：layer 大的<strong>后绘制</strong>（显示在上层）。</li><li>事件：layer 大的<strong>先收到</strong>事件。</li></ul>
+<h2>4. 生命周期钩子</h2>
+<p>每个控件每帧会被依次调用：</p>
+<pre><code>主循环
+  → ui.resize(w, h)            # 根面板铺满全屏，刷新绝对坐标
+  → ui.handle_events(events)   # 事件分发
+  → ui.update(delta_time)      # 每帧逻辑更新
+  → ui.render(renderer)        # 渲染整棵控件树</code></pre>
+<pre><code class="language-python">class MyWidget(Widget):
+    def __init__(self, rect):
+        super().__init__(rect)
+
+    def update(self, delta_time):     # 每帧更新（dt 单位：秒）
+        super().update(delta_time)
+
+    def render(self, renderer):       # 绘制
+        if not self.visible:
+            return
+        renderer.fill(self.abs_rect, (255, 120, 0, 255))</code></pre>
+<h2>5. 把它们组合起来：第一个 UI 程序</h2>
+<pre><code class="language-python">import sdl2
+import sdl2.ext
+from SDLCore.ui.manager import UIManager
+from SDLCore.ui.panel import Panel
+from SDLCore.ui.button import Button
+from SDLCore.ui.label import Label
+
+def main():
+    sdl2.ext.init()
+    window = sdl2.ext.Window(
+        &quot;第一个 UI&quot;, size=(800, 600),
+        flags=sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN,
+    )
+    renderer = sdl2.ext.Renderer(window, flags=sdl2.SDL_RENDERER_ACCELERATED)
+    factory = sdl2.ext.SpriteFactory(sdl2.ext.TEXTURE, renderer=renderer)
+
+    ui = UIManager()                     # UI 总控：持有根面板、负责事件/渲染
+    panel = Panel((100, 100, 400, 300), color=(30, 30, 40, 230))
+    btn = Button((60, 60, 160, 48), text=&quot;点击我&quot;,
+                 callback=lambda: print(&quot;按钮被点击！&quot;))
+    title = Label((60, 20, 0, 24), text=&quot;我的第一个界面&quot;, factory=factory)
+    panel.add_child(title)
+    panel.add_child(btn)
+    ui.root_panel.add_child(panel)
+
+    running = True
+    while running:
+        events = sdl2.ext.get_events()
+        for e in events:
+            if e.type == sdl2.SDL_QUIT:
+                running = False
+        w, h = window.size               # 每帧实时获取窗口尺寸
+        ui.resize(w, h)
+        ui.handle_events(events)
+        ui.update(1 / 60)
+        renderer.clear((40, 44, 56))
+        ui.render(renderer)
+        renderer.present()
+        sdl2.SDL_Delay(16)
+
+    window.close()
+    sdl2.SDL_Quit()
+
+if __name__ == &quot;__main__&quot;:
+    main()</code></pre>
+<p>运行后：窗口中出现一个带标题和按钮的面板，<strong>点击按钮会在终端输出</strong>"按钮被点击！"。</p>
+<blockquote><code>Label</code> 与 <code>Button</code> 需要 <code>factory</code> 才能渲染文字 —— 它就是 <code>SpriteFactory(sdl2.ext.TEXTURE, renderer=...)</code>。</blockquote>
+<p>下一章学习自动排布 —— <a href="03-布局系统.html">第 3 章：布局系统</a></p>
+</body>
+</html>

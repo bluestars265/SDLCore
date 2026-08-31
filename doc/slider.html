@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slider（滑动条控件）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>Slider（滑动条控件）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/slider.py</code></p>
+<h2>概述</h2>
+<p>继承 <code>Widget</code> 的水平滑动条：灰色轨道贯穿控件宽度，滑块垂直居中（内部维护 <code>_thumb_rect</code>）。 支持<strong>点击轨道跳转</strong>与<strong>拖拽滑块</strong>；数值按 <code>step</code> 步长四舍五入对齐并钳制在 <code>[min_val, max_val]</code>。</p>
+<h2>构造参数</h2>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>rect</code></td><td><code>tuple (x, y, w, h)</code></td><td>✅</td><td>—</td><td><strong>位置与大小</strong></td></tr><tr><td><code>min_val</code></td><td><code>float</code></td><td></td><td><code>0.0</code></td><td>最小值</td></tr><tr><td><code>max_val</code></td><td><code>float</code></td><td></td><td><code>100.0</code></td><td>最大值（<code>&lt;= min</code> 时自动 <code>min+1</code>）</td></tr><tr><td><code>value</code></td><td><code>float</code></td><td></td><td><code>0.0</code></td><td>当前值（自动按 step 对齐）</td></tr><tr><td><code>step</code></td><td><code>float</code></td><td></td><td><code>1.0</code></td><td>步长（四舍五入对齐）</td></tr><tr><td><code>on_value_changed</code></td><td><code>callable</code></td><td></td><td><code>None</code></td><td>交互后回调 <code>on_value_changed(value)</code></td></tr><tr><td><code>factory</code></td><td><code>SpriteFactory</code></td><td></td><td><code>None</code></td><td>TEXTURE 渲染工厂（数值文本可选）</td></tr><tr><td><code>id</code> / <code>layer</code> / <code>layout_weight</code></td><td>—</td><td></td><td>—</td><td>同 <code>Widget</code></td></tr></tbody></table>
+<h2>交互</h2>
+<ul><li><strong>点击轨道</strong>：按点击 X 对应比例设置 <code>value</code> 并回调。</li><li><strong>拖拽滑块</strong>：<code>MOUSEBUTTONDOWN</code>（滑块上）设 <code>_dragging=True</code> → <code>MOUSEMOTION</code> 更新 → <code>MOUSEBUTTONUP</code> 结束。</li><li><code>set_value(value)</code>：外部设置（<strong>不触发回调</strong>，按 step 对齐）。</li></ul>
+<h2>渲染</h2>
+<p>灰色轨道（左缘到右缘）→ 起点到滑块中心的主题色填充条 → 滑块（含描边）→ 滑块正上方当前数值文本（<code>Label</code>，需 <code>factory</code>）。</p>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.slider import Slider
+
+sl = Slider((100, 100, 240, 26), min_val=0, max_val=100, value=50,
+            step=5, on_value_changed=lambda v: print(f&quot;数值: {v}&quot;),
+            factory=factory)
+sl.set_value(42)   # 外部设置（不回调）</code></pre>
+<blockquote>JSON 配置（UIBuilder）：<code>{"type": "slider", "id": "sl1", "rect": [0,0,0,30],&lt;br&gt;"min": 0, "max": 10, "value": 3, "step": 1, "on_value_changed": "on_change"}</code>。</blockquote>
+</body>
+</html>

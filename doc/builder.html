@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UIBuilder（配置驱动 UI 构建器）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>UIBuilder（配置驱动 UI 构建器）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/builder.py</code></p>
+<h2>概述</h2>
+<p>通过 JSON / dict 声明控件树，一键递归构建。<strong>结构用配置，行为用代码</strong>：</p>
+<ul><li>事件处理器不在 JSON 中实现，经 <code>bindings</code>（处理器名 -&gt; 回调）由代码注入。</li><li>控件类型由 <code>ComponentRegistry</code> 管理，可注册自定义控件工厂扩展任意类型。</li><li><code>$ref</code> 复用外部组件 JSON；<code>override</code> 覆盖属性。</li><li>配置中的 <code>id</code> 写入控件并登记到 <code>builder.by_id</code>；<code>layer</code> 写入控件图层。</li><li><strong>通用属性</strong>：<code>id</code> / <code>layer</code> / <code>weight</code> / <code>opacity</code>（0.0~1.0）对所有类型统一生效。</li></ul>
+<h2>配置格式</h2>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;panel&quot;,
+  &quot;id&quot;: &quot;root&quot;,
+  &quot;layer&quot;: 20,
+  &quot;rect&quot;: [100, 80, 320, 320],
+  &quot;color&quot;: [255, 255, 255, 200],
+  &quot;layout&quot;: {&quot;type&quot;: &quot;vbox&quot;, &quot;spacing&quot;: 10, &quot;padding&quot;: [10, 10, 10, 10]},
+  &quot;children&quot;: [
+    {&quot;type&quot;: &quot;label&quot;, &quot;id&quot;: &quot;title&quot;, &quot;rect&quot;: [0, 0, -1, 26], &quot;text&quot;: &quot;标题&quot;},
+    {&quot;$ref&quot;: &quot;components/ok_button.json&quot;},
+    {&quot;$ref&quot;: &quot;components/ok_button.json&quot;,
+     &quot;override&quot;: {&quot;id&quot;: &quot;cancel_btn&quot;, &quot;text&quot;: &quot;取消&quot;}}
+  ]
+}</code></pre>
+<h2>内置控件类型</h2>
+<p><code>panel</code> / <code>button</code> / <code>image_button</code> / <code>label</code> / <code>inputbox</code> / <code>scroll_panel</code> / <code>progress_bar</code> （<code>layout</code> 支持 <code>vbox</code> / <code>hbox</code> / <code>grid</code>；<code>w=-1</code> 填满可用宽度、<code>h=-1</code> 填满高度）。</p>
+<h2>使用</h2>
+<pre><code class="language-python">from SDLCore.ui.builder import UIBuilder
+
+builder = UIBuilder(factory=factory, resource_resolver=resolver)
+root = builder.build_file(&quot;resource/scenes/demo_scene/scene.json&quot;, bindings={
+    &quot;on_ok&quot;: self._on_ok,          # 事件处理器在代码中
+})
+builder.by_id[&quot;ok_btn&quot;].set_enabled(False)   # 运行时按 id 访问</code></pre>
+<h2>自定义控件</h2>
+<pre><code class="language-python">registry = ComponentRegistry()
+registry.register(&quot;my_widget&quot;, lambda props, ctx: MyWidget(...))
+builder = UIBuilder(factory=factory, registry=registry)
+# JSON 中即可使用 {&quot;type&quot;: &quot;my_widget&quot;, ...}</code></pre>
+<h2>资源路径解析</h2>
+<p><code>resource_resolver(rel)</code> 把配置中的相对路径映射到 mod 资源目录（<code>ModScene</code> 集成时自动提供）。</p>
+<h2>集成</h2>
+<ul><li><code>ModScene</code>（<code>SDLCore/scene.py</code>）：从 mod 场景 JSON 构建 UI + 场景切换栏。</li><li><code>ModManager</code>：mod 入口经 <code>ModAPI</code> 注册自定义控件到共享 <code>registry</code>，所有 mod 场景共用。</li></ul>
+</body>
+</html>

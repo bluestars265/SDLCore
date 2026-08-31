@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDLCore 学习教程</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<h1>SDLCore 学习教程</h1>
+<p>欢迎！本教程带你<strong>从零开始</strong>熟悉 <strong>SDLCore</strong> —— 基于 PySDL2 的通用 GUI 引擎 + MOD 化游戏框架。 学习完成后，你将能独立使用 SDLCore 组装界面、管理场景、编写自己的 MOD 与游戏逻辑。</p>
+<h2>前置知识</h2>
+<ul><li>Python 3.13 基础语法（变量、函数、类、列表/字典）</li><li>基本的面向对象概念（类、继承、方法）</li></ul>
+<h2>学习路径</h2>
+<table><thead><tr><th>章节</th><th>主题</th><th>你将学会</th></tr></thead><tbody><tr><td><a href="01-环境准备与第一个窗口.html">01 环境准备与第一个窗口</a></td><td>环境 / 最小程序</td><td>安装依赖、创建窗口、主循环</td></tr><tr><td><a href="02-核心概念与控件体系.html">02 核心概念与控件体系</a></td><td>Widget / 坐标 / 控件树</td><td>控件的本质、坐标系统、层级</td></tr><tr><td><a href="03-布局系统.html">03 布局系统</a></td><td>Layout / 自适应</td><td>用 VBox/HBox/Grid 自动排布控件</td></tr><tr><td><a href="04-常用控件.html">04 常用控件</a></td><td>全部内置控件</td><td>按钮/输入框/列表/进度条等用法</td></tr><tr><td><a href="05-事件与交互.html">05 事件与交互</a></td><td>事件分发 / 自定义控件</td><td>交互逻辑、悬停、焦点、自定义</td></tr><tr><td><a href="06-资源与图片.html">06 资源与图片</a></td><td>ResourceManager / SVG</td><td>图片加载、缓存、SVG 素材</td></tr><tr><td><a href="07-场景系统.html">07 场景系统</a></td><td>Scene / SceneManager</td><td>多界面组织、场景切换与通信</td></tr><tr><td><a href="08-MOD系统与项目组织.html">08 MOD 系统与项目组织</a></td><td>MOD 机制</td><td>主 mod、第三方 mod、依赖加载</td></tr><tr><td><a href="09-配置驱动UI.html">09 配置驱动 UI</a></td><td>UIBuilder / JSON</td><td>用 JSON 声明界面、事件注入</td></tr><tr><td><a href="10-实战示例.html">10 实战示例</a></td><td>综合实战</td><td>组装一个完整游戏开始界面</td></tr><tr><td><a href="11-常见问题.html">11 常见问题</a></td><td>FAQ</td><td>常见坑与排查思路</td></tr></tbody></table>
+<h2>阅读建议</h2>
+<ul><li>每章均含<strong>可直接运行</strong>的代码，建议边读边动手。</li><li>需要查询 API 细节时，参考 <code>doc/</code> 下的参考文档（<code>widget.md</code>、<code>panel.md</code>、<code>layout.md</code> 等）。</li><li>结合项目源码阅读效果更佳：<code>SDLCore/</code> 是引擎层，<code>mods/base_game/</code> 是游戏主体。</li><li>学完所有章节后，尝试在 <code>mods/base_game/</code> 中新增自己的场景。</li></ul>
+<h2>项目结构速览</h2>
+<pre><code>II/
+├── main.py                 # 启动入口：仅加载主 mod 与其他 mod 并驱动主循环
+├── test_main.py            # 测试启动入口（额外加载 test_mods/）
+├── SDLCore/                # 通用引擎层（GUI 控件、布局、场景、资源、MOD 系统）
+│   └── ui/                 #   控件库（widget/panel/button/...）
+├── mods/
+│   ├── base_game/          # 主游戏 mod（游戏主体：loading/start 场景）
+│   └── demo_mod/           # 第三方演示 mod
+├── test_mods/test_game/    # 控件测试 mod（仅测试启动时加载）
+├── resource/               # 根资源（字体等）
+├── doc/                    # SDLCore 参考文档（本目录为教程）
+└── game_doc/               # 游戏逻辑层文档</code></pre>
+<blockquote>本教程位于 <code>doc/learn/</code>。开始吧 —— <a href="01-环境准备与第一个窗口.html">第 1 章：环境准备与第一个窗口</a></blockquote>
+</body>
+</html>

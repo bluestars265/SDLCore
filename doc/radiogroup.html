@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RadioGroup（单选组控件）</title>
+<style>
+body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+       max-width: 880px; margin: 20px auto; padding: 0 20px 40px;
+       color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { color: #0b57d0; border-bottom: 1px solid #e3e6ea; padding-bottom: .3em; }
+h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.15em; }
+code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px;
+       font-family: Consolas, "Courier New", monospace; font-size: .92em; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px;
+      overflow-x: auto; border: 1px solid #e3e6ea; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%;
+        display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f0f4fa; }
+blockquote { border-left: 4px solid #d0d7de; margin: 12px 0; padding: 4px 14px;
+             color: #57606a; background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+img { max-width: 100%; }
+.nav { font-size: .9em; margin-bottom: 10px; }
+.nav a { color: #57606a; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="README.html">&larr; 文档索引</a></div>
+<h1>RadioGroup（单选组控件）</h1>
+<p><strong>模块</strong>：<code>SDLCore/ui/radiogroup.py</code></p>
+<h2>概述</h2>
+<p>继承 <code>Panel</code> 的单选组：内部使用 <code>VBoxLayout</code> / <code>HBoxLayout</code> 垂直或水平排列 <code>_RadioButton</code>。 选项为圆形单点：未选中<strong>空心圆</strong>、选中<strong>实心圆</strong>（主题色 + 内部白点），点击时向组报告自身索引。</p>
+<h2>构造参数</h2>
+<table><thead><tr><th>参数</th><th>类型</th><th>必需</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>rect</code></td><td><code>tuple (x, y, w, h)</code></td><td>✅</td><td>—</td><td><strong>位置与大小</strong></td></tr><tr><td><code>options</code></td><td><code>list[str]</code></td><td>✅</td><td>—</td><td><strong>选项文本列表</strong></td></tr><tr><td><code>selected_index</code></td><td><code>int</code></td><td></td><td><code>0</code></td><td>初始选中项索引</td></tr><tr><td><code>on_select</code></td><td><code>callable</code></td><td></td><td><code>None</code></td><td>点击选中后回调 <code>on_select(index, text)</code></td></tr><tr><td><code>factory</code></td><td><code>SpriteFactory</code></td><td>✅</td><td><code>None</code></td><td><strong>TEXTURE 渲染工厂（文字渲染必需）</strong></td></tr><tr><td><code>horizontal</code></td><td><code>bool</code></td><td></td><td><code>False</code></td><td><code>True</code> 用 <code>HBoxLayout</code> 水平排列</td></tr><tr><td><code>id</code> / <code>layer</code> / <code>layout_weight</code></td><td>—</td><td></td><td>—</td><td>同 <code>Widget</code></td></tr></tbody></table>
+<h2>核心交互</h2>
+<ul><li>点击某个 <code>_RadioButton</code> → 组<strong>遍历子项</strong>取消旧选中、选中当前，并调用 <code>on_select(index, text)</code>。</li><li><code>set_selected(index)</code>：外部程序主动切换（<strong>不触发回调</strong>）。</li><li><code>get_selected()</code>：返回 <code>(index, text)</code>。</li></ul>
+<h2>内部类 <code>_RadioButton</code></h2>
+<ul><li>继承 <code>Widget</code>；外观：圆形（空心/实心）+ 右侧文本 <code>Label</code>。</li><li><code>set_checked(checked)</code> 更新选中外观。</li><li>点击调用 <code>group.select(self.index)</code>。</li></ul>
+<h2>使用示例</h2>
+<pre><code class="language-python">from SDLCore.ui.radiogroup import RadioGroup
+
+rg = RadioGroup(
+    (100, 100, 200, 120),
+    options=[&quot;红&quot;, &quot;绿&quot;, &quot;蓝&quot;],
+    selected_index=0,
+    on_select=lambda i, t: print(f&quot;选中: {i} - {t}&quot;),
+    factory=factory,
+)
+rg.set_selected(2)   # 外部切换（不回调）</code></pre>
+<blockquote>JSON 配置（UIBuilder）：<code>{"type": "radio_group", "id": "rg1", "rect": [0,0,0,110],&lt;br&gt;"options": ["A","B","C"], "selected_index": 1, "on_select": "on_sel"}</code>。</blockquote>
+</body>
+</html>
